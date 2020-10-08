@@ -3,14 +3,15 @@
 
 ## SRA Accessions
 ACCESSION=["SRR11215921","SRR11215922","SRR11215923"]
-Bioproject="PRJNA609760"
+BIOPROJECT="PRJNA609760"
 
 ## Regra geral
 rule all:
     input:
-        sra=expand("results/00_sra_files/{accession}.sra", accession=ACCESSION)
+        sra=expand("./results/00_sra_files/{Bioproject}/{accession}/{accession}.sra, accession=ACCESSION, Bioproject=BIOPROJECT),
+        vdb=expand("./results/01_vdb_alogs/{Bioproject}/{accession}.vdb.txt", accession=ACCESSION, Bioproject=BIOPROJECT)
 
-## Script do tutorial
+## Baixa os SRA
 rule prefetch:
     params:
         outdir="./results/00_sra_files/{Bioproject}/"
@@ -19,4 +20,14 @@ rule prefetch:
     shell:
         "prefetch {ACCESSION} "
         "--output-directory {params.outdir}"
+
+## Valida o md5hash
+rule md5validate:
+    input:
+        raw_sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra", accession=ACCESSION)
+    output:
+        vdb_log=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt", accession=ACCESSION)
+    shell:
+        "vdb-validate {accession} >> "
+        "results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt"
 

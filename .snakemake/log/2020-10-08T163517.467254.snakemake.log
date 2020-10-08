@@ -1,0 +1,3 @@
+WildcardError in line 11 of /data3/rafael.correia/projects/algae/Snakefile:
+No values given for wildcard 'Bioproject'.
+  File "/data3/rafael.correia/projects/algae/Snakefile", line 11, in <module>
