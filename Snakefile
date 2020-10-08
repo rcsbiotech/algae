@@ -9,11 +9,9 @@ BIOPROJECT="PRJNA609760"
 rule all:
     input:
         sra=expand("./results/00_sra_files/{Bioproject}/{accession}/{accession}.sra",
-            accession=ACCESSION,
-            Bioproject=BIOPROJECT),
+            accession=ACCESSION, Bioproject=BIOPROJECT),
         vdb=expand("./results/01_vdb_alogs/{Bioproject}/{accession}.vdb.txt",
-            accession=ACCESSION,
-            Bioproject=BIOPROJECT)
+            accession=ACCESSION, Bioproject=BIOPROJECT)
 
 ## Baixa os SRA
 rule prefetch:
@@ -28,9 +26,11 @@ rule prefetch:
 ## Valida o md5hash
 rule md5validate:
     input:
-        raw_sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra", accession=ACCESSION)
+        raw_sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra",
+            accession=ACCESSION, Bioproject=BIOPROJECT)
     output:
-        vdb_log=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt", accession=ACCESSION)
+        vdb_log=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt",
+            accession=ACCESSION, Bioproject=BIOPROJECT)
     shell:
         "vdb-validate {accession} >> "
         "results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt"
