@@ -32,6 +32,6 @@ rule md5validate:
         vdb_log=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt",
             accession=ACCESSION, Bioproject=BIOPROJECT)
     shell:
-        "vdb-validate {accession} >> "
-        "results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt"
+        "vdb-validate {input.raw_sra} >> "
+        "{output.vdb_log}"
 
