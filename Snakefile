@@ -16,22 +16,20 @@ rule all:
 ## Baixa os SRA
 rule prefetch:
     params:
-        outdir="results/00_sra_files/{Bioproject}/"
+        outdir="results/00_sra_files/{Bioproject}/",
+        force="all"
     output:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     shell:
-        "prefetch {ACCESSION} "
+        "prefetch {ACCESSION} --force {params.force} "
         "--output-directory {params.outdir}"
 
 ## Valida o md5hash
 rule md5validate:
     input:
-        raw_sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra",
-            accession=ACCESSION, Bioproject=BIOPROJECT)
+        "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     output:
-        vdb_log=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt",
-            accession=ACCESSION, Bioproject=BIOPROJECT)
+        "results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt"
     shell:
-        "vdb-validate {input.raw_sra} >> "
-        "{output.vdb_log}"
+        "vdb-validate {input} 2> {output}"
 
