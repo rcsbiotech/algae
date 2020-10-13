@@ -11,11 +11,16 @@ VAR_LIB_LAYOUT="PAIRED"
 # Choose between { Genome-Guided/GG | de novo }
 VAR_ASSEMBLY_STRATEGY="GG"
 
-## NETWORK Setup
-VAR_NCBI_GENOME="blank"
-VAR_NCBI_ANNOTATION="blank"
+## LINKS/REFS/NETWORK Setup
+### 1. Search for genome in Taxonomy, or nearest
+### 2. Click the latest/most interesting
+### 3. On top left, right click copy link "Download sequences in FASTA for genome"
+REF_URL_NCBI_GENOME=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/002/754/935/GCF_002754935.1_ASM275493v1/GCF_002754935.1_ASM275493v1_genomic.fna.gz",]
+REF_URL_NCBI_ANNOTATION=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/002/754/935/GCF_002754935.1_ASM275493v1/GCF_002754935.1_ASM275493v1_genomic.gff.gz",]
+REF_NCBI_GENOME_CODE=["GCF_002754935.1_ASM275493v1",]
 
-## Regra geral
+## All outputs rule
+### Check for commas (,) when adding new rules or it'll fizzle!
 rule all:
     input:
         sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra",
@@ -23,7 +28,11 @@ rule all:
         vdb=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt",
             accession=ACCESSION, Bioproject=BIOPROJECT),
         fqf=expand("results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
-            accession=ACCESSION, Bioproject=BIOPROJECT)
+            accession=ACCESSION, Bioproject=BIOPROJECT),
+        ref_genome=expand("data/genomes/{Bioproject}/{GenomeCode}.fasta",
+            Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
+        ref_annot=expand("data/genomes/{Bioproject}/{GenomeCode}.gff",
+            Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE)
 
 ## Baixa os SRA
 rule prefetch:
@@ -56,4 +65,21 @@ rule fastqdump:
     shell:
         "fastq-dump --split-e {input} "
         "--outdir {output.fqdir}"
+        
+## Imports reference genome
+rule import_reference_genome:
+    output:
+        reference_genome="data/genome/{REF_NCBI_GENOME_CODE}.fna",
+        reference_annotation="data/genome/{REF_NCBI_GENOME_CODE}.gff"
+    shell:
+        "wget -qO {REF_URL_NCBI_GENOME} >> data/genome/{REF_NCBI_GENOME_CODE}.fna.gz && "
+        "wget -qO {REF_URL_NCBI_ANNOTATION} >> data/genome/{REF_NCBI_GENOME_CODE}.gff.gz && "
+        "gzip -d data/genome/*.gz"
+
+## Genome download
+### IF, genome-guided, downloads
+### ELSE, run nothing, just print a message
+
+
+
 
