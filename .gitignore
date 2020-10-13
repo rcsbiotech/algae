@@ -2,3 +2,4 @@ data
 analysis
 results
 .Rproj.user
+.snakemake

@@ -21,6 +21,8 @@ rule all:
         sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra",
             accession=ACCESSION, Bioproject=BIOPROJECT),
         vdb=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt",
+            accession=ACCESSION, Bioproject=BIOPROJECT),
+        fqf=expand("results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
             accession=ACCESSION, Bioproject=BIOPROJECT)
 
 ## Baixa os SRA
@@ -48,9 +50,10 @@ rule fastqdump:
     input:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     output:
-        fq1="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq"
+        fqdir=directory("results/02_fastq_dump/{Bioproject}/{accession}"),
+        fq1="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
         fq2="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_2.fastq"
     shell:
         "fastq-dump --split-e {input} "
-        "--outdir results/02_fastq_dump/{Bioproject}/{accession}"
+        "--outdir {output.fqdir}"
 
