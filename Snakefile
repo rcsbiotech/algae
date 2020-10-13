@@ -29,7 +29,7 @@ rule all:
             accession=ACCESSION, Bioproject=BIOPROJECT),
         fqf=expand("results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
             accession=ACCESSION, Bioproject=BIOPROJECT),
-        ref_genome=expand("data/genomes/{Bioproject}/{GenomeCode}.fasta",
+        ref_genome=expand("data/genomes/{Bioproject}/{GenomeCode}.fna",
             Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
         ref_annot=expand("data/genomes/{Bioproject}/{GenomeCode}.gff",
             Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE)
@@ -69,12 +69,12 @@ rule fastqdump:
 ## Imports reference genome
 rule import_reference_genome:
     output:
-        reference_genome="data/genome/{REF_NCBI_GENOME_CODE}.fna",
-        reference_annotation="data/genome/{REF_NCBI_GENOME_CODE}.gff"
+        reference_genome="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.fna",
+        reference_annotation="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.gff"
     shell:
-        "wget -qO {REF_URL_NCBI_GENOME} >> data/genome/{REF_NCBI_GENOME_CODE}.fna.gz && "
-        "wget -qO {REF_URL_NCBI_ANNOTATION} >> data/genome/{REF_NCBI_GENOME_CODE}.gff.gz && "
-        "gzip -d data/genome/*.gz"
+        "wget -q -O data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.fna.gz {REF_URL_NCBI_GENOME} && "
+        "wget -q -O data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.gff.gz {REF_URL_NCBI_ANNOTATION} && "
+        "gzip -d data/genomes/{BIOPROJECT}/*.gz"
 
 ## Genome download
 ### IF, genome-guided, downloads
