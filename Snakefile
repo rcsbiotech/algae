@@ -12,6 +12,8 @@ VAR_LIB_LAYOUT="PAIRED"
 VAR_ASSEMBLY_STRATEGY="GG"
 # Reads length (on average)
 VAR_READS_LENGTH=150
+# STAR Overhang
+VAR_OVERHANG=VAR_READS_LENGTH-1
 
 ## LINKS/REFS/NETWORK Setup
 ### 1. Search for genome in Taxonomy, or nearest
@@ -37,7 +39,9 @@ rule all:
         ref_genome=expand("data/genomes/{Bioproject}/{GenomeCode}.fna",
             Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
         ref_annot=expand("data/genomes/{Bioproject}/{GenomeCode}.gtf",
-            Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE)
+            Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
+	star_index=expand("data/genomes/{Bioproject}/star_index",
+            Bioproject=BIOPROJECT)
 
 ## Baixa os SRA
 rule prefetch:
@@ -87,19 +91,21 @@ rule import_reference_genome:
 ## 2. Align to genome
 rule star_genome_generate:
     input:
-        ref_genome="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.fna",
-        ref_annotation="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.gtf"
+        genome=expand("data/genomes/{code}/{ref}.fna",
+            code=BIOPROJECT, ref=REF_NCBI_GENOME_CODE),
+        annotf=expand("data/genomes/{code}/{ref}.gtf",
+            code=BIOPROJECT, ref=REF_NCBI_GENOME_CODE)
     output:
-        star_index=directory("data/genome/{BIOPROJECT}/star_index")
+        directory("data/genomes/{BIOPROJECT}/star_index")
     params:
-        star_overhang={VAR_READS_LENGTH}-1
-    threads: {THREADS_STAR_INDEX}
+        star_overhang={VAR_OVERHANG}
+    threads: 10
     shell:
         "STAR --runThreadN {threads} "
         "--runMode genomeGenerate "
-        "--genomeDir {output.star_index} "
-        "--genomeFastaFiles {input.ref_genome} "
-        "--sjdbGTFfile {input.ref_annotation} "
+        "--genomeDir {output} "
+        "--genomeFastaFiles {input.genome} "
+        "--sjdbGTFfile {input.annotf} "
         "--genomeSAindexNbases 10 "
         "--sjdbOverhang {params.star_overhang}"
         
