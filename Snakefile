@@ -108,6 +108,35 @@ rule star_genome_generate:
         "--sjdbGTFfile {input.annotf} "
         "--genomeSAindexNbases 10 "
         "--sjdbOverhang {params.star_overhang}"
+
+## Star align only for paired
+rule star_align:
+    input:
+        index=expand("data/genomes/{code}/star_index", code=BIOPROJECT),
+        annotf=expand("data/genomes/{code}/{ref}.gtf", code=BIOPROJECT,
+            ref=REF_NCBI_GENOME_CODE),
+        fq1=expand("results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq",
+            code=BIOPROJECT, acc=ACCESSION),
+        fq2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
+             code=BIOPROJECT, acc=ACCESSION),
+        prefix=expand("{acc}", acc=ACCESSION)
+    output:
+        "results/03_STAR_alignment/{Bioproject}/{accession}.out.bam
+    params:
+        multimapNmax=20,
+        outSAMtype="Bam Unsorted"
+    threads: 30
+    shell:
+        "STAR "
+        "--runThreadN {threads} "
+        "--genomeDir {input.index} "
+        "--readFilesIn {input.fq1} {input.fq2} "
+        "--sjdbGTFfile {input.annot} "
+        "--outSAMstrandField intronMotif "
+        "--outFilterIntronMotifs RemoveNoncanonical "
+        "--outFilterMultimapNmax {params.multimapNmax} "
+        "--outFileNamePrefix .{input.prefix} "
+        "--outSAMtype {params.outSAMtype}"
         
 ## Genome download
 ### IF, genome-guided, downloads
