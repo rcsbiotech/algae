@@ -41,7 +41,9 @@ rule all:
         ref_annot=expand("data/genomes/{Bioproject}/{GenomeCode}.gtf",
             Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
 	star_index=expand("data/genomes/{Bioproject}/star_index",
-            Bioproject=BIOPROJECT)
+            Bioproject=BIOPROJECT),
+        bam=expand("results/03_STAR_alignment/{Bioproject}/{accession}.Aligned.out.bam",
+            Bioproject=BIOPROJECT, accession=ACCESSION)
 
 ## Baixa os SRA
 rule prefetch:
@@ -110,32 +112,37 @@ rule star_genome_generate:
         "--sjdbOverhang {params.star_overhang}"
 
 ## Star align only for paired
+## (to-do) OBS: there's a shell method for acquiring basenames (fqb), consider
+## Swapping to python lambda functions if possible
+
+## EXPAND adds all files
+## W/OUT EXPAND runs one per file!
 rule star_align:
     input:
         index=expand("data/genomes/{code}/star_index", code=BIOPROJECT),
-        annotf=expand("data/genomes/{code}/{ref}.gtf", code=BIOPROJECT,
-            ref=REF_NCBI_GENOME_CODE),
-        fq1=expand("results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq",
-            code=BIOPROJECT, acc=ACCESSION),
-        fq2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
-             code=BIOPROJECT, acc=ACCESSION),
-        prefix=expand("{acc}", acc=ACCESSION)
+        annotf=expand("data/genomes/{code}/{ref}.gtf", code=BIOPROJECT, ref=REF_NCBI_GENOME_CODE),
+        fq1="results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq", 
+        fq2="results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq"
     output:
-        "results/03_STAR_alignment/{Bioproject}/{accession}.out.bam
+        "results/03_STAR_alignment/{code}/{acc}.Aligned.out.bam"
     params:
         multimapNmax=20,
-        outSAMtype="Bam Unsorted"
+        outSAMtype="BAM Unsorted",
+        outdir="results/03_STAR_alignment/{code}",
+        unmapped="Within"
     threads: 30
     shell:
+        "fqb=$(basename {input.fq1} _1.fastq) && "
         "STAR "
         "--runThreadN {threads} "
         "--genomeDir {input.index} "
         "--readFilesIn {input.fq1} {input.fq2} "
-        "--sjdbGTFfile {input.annot} "
+        "--sjdbGTFfile {input.annotf} "
         "--outSAMstrandField intronMotif "
         "--outFilterIntronMotifs RemoveNoncanonical "
         "--outFilterMultimapNmax {params.multimapNmax} "
-        "--outFileNamePrefix .{input.prefix} "
+        "--outFileNamePrefix {params.outdir}/${{fqb}}. "
+        "--outSAMunmapped {params.unmapped} "
         "--outSAMtype {params.outSAMtype}"
         
 ## Genome download
