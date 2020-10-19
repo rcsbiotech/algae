@@ -52,7 +52,9 @@ rule all:
         star_index=expand("data/genomes/{Bioproject}/star_index",
             Bioproject=BIOPROJECT),
         bam=expand("results/03_STAR_alignment/{Bioproject}/{accession}.Aligned.out.bam",
-            Bioproject=BIOPROJECT, accession=ACCESSION)
+            Bioproject=BIOPROJECT, accession=ACCESSION),
+        trinity_asm=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta",
+            Bioproject=BIOPROJECT)
 
 ## Baixa os SRA
 rule prefetch:
@@ -156,23 +158,22 @@ rule star_align:
         
 rule trinity_asm:
     input:
-        #bamfile=expand(),
-        fq1=expand("results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq",
+        fq_read1=expand("results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq",
             code=BIOPROJECT, acc=ACCESSION),
-        fq2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
+        fq_read2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
             code=BIOPROJECT, acc=ACCESSION)
     output:
-        trinity_dir=directory("results/04_trinity_assembly/trinity_{code}")
-        "results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
+        trinity_dir=directory("results/04_trinity_assembly/trinity_{code}"),
+        trinity_fasta="results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
     params:
-        max_memory="200G"
-        max_read_cov=30
-    threads: 50
+        max_memory="200G",
+        max_read_cov=20
+    threads: 200
     shell:
         "Trinity "
         "--seqType fq "
-        "--left {input.fq1} "
-        "--right {input.fq2} "
+        "--left {input.fq_read1} "
+        "--right {input.fq_read2} "
         "--output {output.trinity_dir} "
         "--max_memory {params.max_memory} "
         "--normalize_max_read_cov {params.max_read_cov} "
