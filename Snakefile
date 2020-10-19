@@ -156,6 +156,12 @@ rule star_align:
         "--outSAMunmapped {params.unmapped} "
         "--outSAMtype {params.outSAMtype}"
         
+# [ .. Trinity assembly .. ] #
+# some R code join(map()) is run inside shell due to 
+# trinity needing input fqfiles as a comma-separated objects,
+# not spaces, which is default snakemake behaviour.
+# to-do: implement genome-guided bam assembly.
+# also to-do: recheck previous alignments.
 rule trinity_asm:
     input:
         fq_read1=expand("results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq",
@@ -169,19 +175,17 @@ rule trinity_asm:
         max_memory="200G",
         max_read_cov=20
     threads: 200
-    shell:
-        "Trinity "
+    run:
+        read1_parsed = ",".join(map(str, input.fq_read1))
+        read2_parsed = ",".join(map(str, input.fq_read2))
+        shell("Trinity "
         "--seqType fq "
-        "--left {input.fq_read1} "
-        "--right {input.fq_read2} "
+        "--left {read1_parsed} "
+        "--right {read2_parsed} "
         "--output {output.trinity_dir} "
         "--max_memory {params.max_memory} "
         "--normalize_max_read_cov {params.max_read_cov} "
-        "--CPU {threads}"
-        
-## Genome download
-### IF, genome-guided, downloads
-### ELSE, run nothing, just print a message
+        "--CPU {threads}")
 
 
 
