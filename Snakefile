@@ -2,6 +2,7 @@
 # configfile:"config/config.yaml"
 
 ## SRA Accessions
+## To-do: read from metadata - S4/json file
 ACCESSION=["SRR11215921","SRR11215922","SRR11215923"]
 BIOPROJECT="PRJNA609760"
 
@@ -15,6 +16,12 @@ VAR_READS_LENGTH=150
 # STAR Overhang
 VAR_OVERHANG=VAR_READS_LENGTH-1
 
+## Assembly variables
+### "de_novo" or "genome_guided"
+### TO DO:"de_novo" if no genome or poor alignment representation in gene space;
+### "genome_guided" otherwise
+VAR_ASSEMBLY_TYPE="de_novo"
+
 ## LINKS/REFS/NETWORK Setup
 ### 1. Search for genome in Taxonomy, or nearest
 ### 2. Click the latest/most interesting
@@ -26,7 +33,9 @@ REF_NCBI_GENOME_CODE=["GCF_002754935.1_ASM275493v1",]
 ## THREADS per process
 THREADS_STAR_INDEX=10
 
-## All outputs rule
+## "All outputs" rule
+### For the pipeline to run back to back, every output must be passed as an input
+### to all, otherwise one must explicit tell the shell which output must be generated.
 ### Check for commas (,) when adding new rules or it'll fizzle!
 rule all:
     input:
@@ -40,7 +49,7 @@ rule all:
             Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
         ref_annot=expand("data/genomes/{Bioproject}/{GenomeCode}.gtf",
             Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
-	star_index=expand("data/genomes/{Bioproject}/star_index",
+        star_index=expand("data/genomes/{Bioproject}/star_index",
             Bioproject=BIOPROJECT),
         bam=expand("results/03_STAR_alignment/{Bioproject}/{accession}.Aligned.out.bam",
             Bioproject=BIOPROJECT, accession=ACCESSION)
@@ -144,6 +153,30 @@ rule star_align:
         "--outFileNamePrefix {params.outdir}/${{fqb}}. "
         "--outSAMunmapped {params.unmapped} "
         "--outSAMtype {params.outSAMtype}"
+        
+rule trinity_asm:
+    input:
+        #bamfile=expand(),
+        fq1=expand("results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq",
+            code=BIOPROJECT, acc=ACCESSION),
+        fq2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
+            code=BIOPROJECT, acc=ACCESSION)
+    output:
+        trinity_dir=directory("results/04_trinity_assembly/trinity_{code}")
+        "results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
+    params:
+        max_memory="200G"
+        max_read_cov=30
+    threads: 50
+    shell:
+        "Trinity "
+        "--seqType fq "
+        "--left {input.fq1} "
+        "--right {input.fq2} "
+        "--output {output.trinity_dir} "
+        "--max_memory {params.max_memory} "
+        "--normalize_max_read_cov {params.max_read_cov} "
+        "--CPU {threads}"
         
 ## Genome download
 ### IF, genome-guided, downloads
