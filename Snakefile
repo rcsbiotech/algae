@@ -1,16 +1,20 @@
 ## YAML configs
 # configfile:"config/config.yaml"
 
+# [.. General vars ..] #
+VAR_ANALYSIS_ID="TEST001"
+
+# [ .. Public data vars .. ] #
 ## SRA Accessions
-## To-do: read from metadata - S4/json file
+### Download method: {PREFETCH | WGET}
+VAR_DOWNLOAD_METHOD="WGET"
+### To-do: read from metadata - S4/json file
 ACCESSION=["SRR11215921","SRR11215922","SRR11215923"]
 BIOPROJECT="PRJNA609760"
 
 ## RUN Setup
 # Choose between { Paired | Single | Mixed }
 VAR_LIB_LAYOUT="PAIRED"
-# Choose between { Genome-Guided/GG | de novo }
-VAR_ASSEMBLY_STRATEGY="GG"
 # Reads length (on average)
 VAR_READS_LENGTH=150
 # STAR Overhang
@@ -20,7 +24,7 @@ VAR_OVERHANG=VAR_READS_LENGTH-1
 ### "de_novo" or "genome_guided"
 ### TO DO:"de_novo" if no genome or poor alignment representation in gene space;
 ### "genome_guided" otherwise
-VAR_ASSEMBLY_TYPE="de_novo"
+VAR_ASSEMBLY_STRATEGY="de_novo"
 
 ## LINKS/REFS/NETWORK Setup
 ### 1. Search for genome in Taxonomy, or nearest
@@ -63,9 +67,15 @@ rule prefetch:
         force="all"
     output:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
-    shell:
-        "prefetch {ACCESSION} --force {params.force} "
-        "--output-directory {params.outdir}"
+    run:
+        if VAR_DOWNLOAD_METHOD == "PREFETCH":
+            shell("prefetch {ACCESSION} --force {params.force} "
+            "--output-directory {params.outdir}")
+        if VAR_DOWNLOAD_METHOD == "WGET":
+            shell("mkdir -p {params.outdir} && "
+                "wget http://sra-download.ncbi.nlm.nih.gov/srapub/{ACCESSION} "
+                "-O {params.outdir}/{ACCESSION}/{ACCESSION}.sra")
+        
 
 ## Valida o md5hash
 rule md5validate:
@@ -176,17 +186,32 @@ rule trinity_asm:
         max_read_cov=20
     threads: 200
     run:
-        read1_parsed = ",".join(map(str, input.fq_read1))
-        read2_parsed = ",".join(map(str, input.fq_read2))
-        shell("Trinity "
-        "--seqType fq "
-        "--left {read1_parsed} "
-        "--right {read2_parsed} "
-        "--output {output.trinity_dir} "
-        "--max_memory {params.max_memory} "
-        "--normalize_max_read_cov {params.max_read_cov} "
-        "--CPU {threads}")
+        if VAR_ASSEMBLY_STRATEGY == "de_novo":
+            read1_parsed = ",".join(map(str, input.fq_read1))
+            read2_parsed = ",".join(map(str, input.fq_read2))
+            shell("Trinity "
+            "--seqType fq "
+            "--left {read1_parsed} "
+            "--right {read2_parsed} "
+            "--output {output.trinity_dir} "
+            "--max_memory {params.max_memory} "
+            "--normalize_max_read_cov {params.max_read_cov} "
+            "--CPU {threads}")
+        # Placeholder: still gotta add bam > sam > sort sam.    
+        if VAR_ASSEMBLY_STRATEGY == "genome_guided":
+            shell("Trinity --version")
 
+# rename fasta headers by analysis code
+rule trinity_asm_rename:
+    input:
+        asm="results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
+    output:
+        "results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
+    params:
+        code=VAR_ANALYSIS_ID
+    run:
+        print(code)
+        shell("sed -i 's/TRINITY/{params.code}_TRINITY {input.asm}")
 
 
 
