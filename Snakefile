@@ -1,6 +1,9 @@
 ## YAML configs
 # configfile:"config/config.yaml"
 
+# Libs
+import pandas as pd
+
 # [.. General vars ..] #
 VAR_ANALYSIS_ID="TEST001"
 
@@ -11,6 +14,10 @@ VAR_DOWNLOAD_METHOD="WGET"
 ### To-do: read from metadata - S4/json file
 ACCESSION=["SRR11215921","SRR11215922","SRR11215923"]
 BIOPROJECT="PRJNA609760"
+
+# Metadata
+metadata = pd.read_table("data/intel/{BIOPROJECT}/metadata.txt")
+runs = metadata.index
 
 ## RUN Setup
 # Choose between { Paired | Single | Mixed }
@@ -62,19 +69,21 @@ rule all:
 
 ## Baixa os SRA
 rule prefetch:
+    input:
+        "data/intel/{Bioproject}/samples/{accession}.blank"
     params:
-        outdir="results/00_sra_files/{Bioproject}/",
+        outdir="results/00_sra_files/{Bioproject}/{accession}",
         force="all"
     output:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     run:
         if VAR_DOWNLOAD_METHOD == "PREFETCH":
-            shell("prefetch {ACCESSION} --force {params.force} "
+            shell("prefetch {accession} --force {params.force} "
             "--output-directory {params.outdir}")
         if VAR_DOWNLOAD_METHOD == "WGET":
             shell("mkdir -p {params.outdir} && "
-                "wget http://sra-download.ncbi.nlm.nih.gov/srapub/{ACCESSION} "
-                "-O {params.outdir}/{ACCESSION}/{ACCESSION}.sra")
+                "wget http://sra-download.ncbi.nlm.nih.gov/srapub/{accession} "
+                "-O {params.outdir}/{accession}.sra")
         
 
 ## Valida o md5hash
