@@ -77,6 +77,8 @@ rule all:
             Bioproject=BIOPROJECT),
         trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta",
             Bioproject=BIOPROJECT)
+        longest_orfs=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep",
+            Bioproject=BIOPROJECT)
 
 ## Baixa os SRA
 rule prefetch:
@@ -232,6 +234,24 @@ rule after_asm_rename:
     run:
         shell("sed 's/TRINITY/{params.ID}_TRINITY/' {input} > {output.ren_out} && "
             "sed -i 's/ .*//' {output.ren_out}")
+            
+            
+# --- Annotation --- #
+## TransDecoder - pull peptides
+rule transdecoder_get_peptides:
+    input:
+        "results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta"
+    output:
+        "results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep"
+    params:
+        inpdir="results/04_trinity_assembly/trinity_{Bioproject}"
+        outdir="results/05_annotation/01_transdecoder"
+        minsize=70
+    run:
+        shell("TransDecoder.LongOrfs -t {input} "
+        "-m {params.minsize} "
+        "--output_dir {params.outdir} "
+        "--gene_trans_map {params.inpdir}/*gene_trans_map")
 
 
 
