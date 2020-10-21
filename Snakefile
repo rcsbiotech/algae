@@ -1,3 +1,9 @@
+## [.. Instructions (wip) ..] ##
+# 1. Create a metadata.txt file inside data/intel/{BIOPROJECT}
+# 2. Create sample blank files {ACCESSION}.blank inside data/intel/{BIOPROJECT/samples
+# 3. Run the pipeline
+
+
 ## YAML configs
 # configfile:"config/config.yaml"
 
@@ -12,12 +18,15 @@ VAR_ANALYSIS_ID="TEST001"
 ### Download method: {PREFETCH | WGET}
 VAR_DOWNLOAD_METHOD="WGET"
 ### To-do: read from metadata - S4/json file
-ACCESSION=["SRR11215921","SRR11215922","SRR11215923"]
 BIOPROJECT="PRJNA609760"
 
 # Metadata
-metadata = pd.read_table("data/intel/{BIOPROJECT}/metadata.txt")
-runs = metadata.index
+## Parses metadata from "metadata.txt"
+metadata_path = ("data/intel/", BIOPROJECT, "/metadata.txt")
+metadata = pd.read_table("".join(metadata_path)).set_index("Run", drop=False)
+ACCESSION = list(metadata.index)
+## Works @ 2020-10-20
+# print(ACCESSION)
 
 ## RUN Setup
 # Choose between { Paired | Single | Mixed }
@@ -65,6 +74,8 @@ rule all:
         bam=expand("results/03_STAR_alignment/{Bioproject}/{accession}.Aligned.out.bam",
             Bioproject=BIOPROJECT, accession=ACCESSION),
         trinity_asm=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta",
+            Bioproject=BIOPROJECT),
+        trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta",
             Bioproject=BIOPROJECT)
 
 ## Baixa os SRA
@@ -78,12 +89,12 @@ rule prefetch:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     run:
         if VAR_DOWNLOAD_METHOD == "PREFETCH":
-            shell("prefetch {accession} --force {params.force} "
+            shell("prefetch {wildcards.accession} --force {params.force} "
             "--output-directory {params.outdir}")
         if VAR_DOWNLOAD_METHOD == "WGET":
             shell("mkdir -p {params.outdir} && "
-                "wget http://sra-download.ncbi.nlm.nih.gov/srapub/{accession} "
-                "-O {params.outdir}/{accession}.sra")
+                "wget http://sra-download.ncbi.nlm.nih.gov/srapub/{wildcards.accession} "
+                "-O {params.outdir}/{wildcards.accession}.sra")
         
 
 ## Valida o md5hash
@@ -188,12 +199,12 @@ rule trinity_asm:
         fq_read2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
             code=BIOPROJECT, acc=ACCESSION)
     output:
-        trinity_dir=directory("results/04_trinity_assembly/trinity_{code}"),
         trinity_fasta="results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
     params:
-        max_memory="200G",
+        trinity_dir=directory("results/04_trinity_assembly/trinity_{code}"),
+        max_memory="600G",
         max_read_cov=20
-    threads: 200
+    threads: 100
     run:
         if VAR_ASSEMBLY_STRATEGY == "de_novo":
             read1_parsed = ",".join(map(str, input.fq_read1))
@@ -202,7 +213,7 @@ rule trinity_asm:
             "--seqType fq "
             "--left {read1_parsed} "
             "--right {read2_parsed} "
-            "--output {output.trinity_dir} "
+            "--output {params.trinity_dir} "
             "--max_memory {params.max_memory} "
             "--normalize_max_read_cov {params.max_read_cov} "
             "--CPU {threads}")
@@ -211,16 +222,16 @@ rule trinity_asm:
             shell("Trinity --version")
 
 # rename fasta headers by analysis code
-rule trinity_asm_rename:
+rule after_asm_rename:
     input:
-        asm="results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
+        trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta"
     output:
-        "results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
+        ren_out="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta"
     params:
-        code=VAR_ANALYSIS_ID
+        ID=expand("{id}", id=VAR_ANALYSIS_ID)
     run:
-        print(code)
-        shell("sed -i 's/TRINITY/{params.code}_TRINITY {input.asm}")
+        shell("sed 's/TRINITY/{params.ID}_TRINITY/' {input} > {output.ren_out} && "
+            "sed -i 's/ .*//' {output.ren_out}")
 
 
 
