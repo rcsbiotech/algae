@@ -76,7 +76,7 @@ rule all:
         trinity_asm=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta",
             Bioproject=BIOPROJECT),
         trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta",
-            Bioproject=BIOPROJECT)
+            Bioproject=BIOPROJECT),
         longest_orfs=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep",
             Bioproject=BIOPROJECT)
 
@@ -230,10 +230,13 @@ rule after_asm_rename:
     output:
         ren_out="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta"
     params:
-        ID=expand("{id}", id=VAR_ANALYSIS_ID)
+        ID=expand("{id}", id=VAR_ANALYSIS_ID),
+        trinity_dir="results/04_trinity_assembly/trinity_{Bioproject}"
     run:
         shell("sed 's/TRINITY/{params.ID}_TRINITY/' {input} > {output.ren_out} && "
-            "sed -i 's/ .*//' {output.ren_out}")
+            "sed -i 's/ .*//' {output.ren_out} && "
+            "map=$(ls {params.trinity_dir}/*gene_trans_map) && "
+            "sed -i 's/TRINITY/{params.ID}_TRINITY/g' ${{map}}")
             
             
 # --- Annotation --- #
@@ -244,14 +247,15 @@ rule transdecoder_get_peptides:
     output:
         "results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep"
     params:
-        inpdir="results/04_trinity_assembly/trinity_{Bioproject}"
-        outdir="results/05_annotation/01_transdecoder"
+        inpdir="results/04_trinity_assembly/trinity_{Bioproject}",
+        outdir="results/05_annotation/01_transdecoder_{Bioproject}",
         minsize=70
     run:
-        shell("TransDecoder.LongOrfs -t {input} "
+        shell("map=$(ls {params.inpdir}/*gene_trans_map) && "
+	"TransDecoder.LongOrfs -t {input} "
         "-m {params.minsize} "
         "--output_dir {params.outdir} "
-        "--gene_trans_map {params.inpdir}/*gene_trans_map")
+        "--gene_trans_map ${{map}}")
 
 
 
