@@ -206,7 +206,7 @@ rule trinity_asm:
         trinity_dir=directory("results/04_trinity_assembly/trinity_{code}"),
         max_memory="600G",
         max_read_cov=20
-    threads: 100
+    threads: 50
     run:
         if VAR_ASSEMBLY_STRATEGY == "de_novo":
             read1_parsed = ",".join(map(str, input.fq_read1))
@@ -237,6 +237,31 @@ rule after_asm_rename:
             "sed -i 's/ .*//' {output.ren_out} && "
             "map=$(ls {params.trinity_dir}/*gene_trans_map) && "
             "sed -i 's/TRINITY/{params.ID}_TRINITY/g' ${{map}}")
+            
+# --- Quantification --- #
+
+## Salmon step 1. Transcriptome index
+### The index is needed to map reads to a transcriptome, and count.
+rule salmon_index:
+    input:
+        trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta"
+    output:
+        salmon_index="results/06_diffex/salmon_index_{Bioproject}/refseq.bin"
+    params:
+        salmon_out_dir="results/06_diffex/salmon_index_{Bioproject}"
+    run:
+        shell("salmon index "
+        "--transcripts {input.trinity_fasta} "
+        "--index {params.salmon_out_dir} "
+        "--threads {threads}")
+
+## Salmon step 2. Actual quantification
+
+
+# --- DiffEx ---- #
+
+
+            
             
             
 # --- Annotation --- #
