@@ -80,7 +80,9 @@ rule all:
         longest_orfs=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep",
             Bioproject=BIOPROJECT),
         salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}/refseq.bin",
-            Bioproject=BIOPROJECT)
+            Bioproject=BIOPROJECT),
+        salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}/quant.sf",
+            Bioproject=BIOPROJECT, acc=ACCESSION)
 
 ## Baixa os SRA
 rule prefetch:
@@ -259,13 +261,55 @@ rule salmon_index:
         "--threads {threads}")
 
 ## Salmon step 2. Actual quantification
+## About parameters (--validateMappings)
+### Enables selective alignment of the sequencing reads when mapping them to the 
+### transcriptome. This can improve both the sensitivity and specificity of mapping 
+### and, as a result, can improve quantification accuracy (salmon docs).
+
+rule salmon_quant:
+    input:
+        fq1="results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq", 
+        fq2="results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
+        salmon_index="results/06_diffex/salmon_index_{Bioproject}"
+    output:
+        salmon_quant="results/06_diffex/salmon_quant_{Bioproject}/{acc}/quant.sf"
+    params:
+        mapdir="results/04_trinity_assembly/trinity_{Bioproject}",
+        salmon_quant_outdir="results/06_diffex/salmon_quant_{Bioproject}/{acc}",
+        libType="A",
+        scoreFraction="0.70"
+    threads: 50
+    run:
+        shell(
+            "map=$(ls {params.mapdir}/*gene_trans_map) && "
+            "salmon quant "
+            "--index {input.salmon_index} "
+            "--libType {params.libType} "
+            "--mates1 {input.fq1} "
+            "--mates2 {input.fq2} "
+            "-o {params.salmon_quant_outdir} "
+            "--geneMap ${{map}} "
+            "--validateMappings "
+            "--gcBias --seqBias "
+            "--threads {threads}"
+        )
+
+
+
+
+
 
 
 # --- DiffEx ---- #
+## Inputs:
+### - A set of salmon directories
+### - A metadata.txt file ([to do] to be specified on instructions.md)
+## Outputs:
+### - All sets of diffex genes with values (p, p-adj, deltaFC, deltaquant)
+           
 
 
-            
-            
+
             
 # --- Annotation --- #
 ## TransDecoder - pull peptides
