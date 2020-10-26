@@ -3,3 +3,4 @@ analysis
 results
 .Rproj.user
 .snakemake
+logs/*

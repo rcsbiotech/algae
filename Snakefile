@@ -78,7 +78,7 @@ rule all:
         trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta",
             Bioproject=BIOPROJECT),
         longest_orfs=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep",
-            Bioproject=BIOPROJECT)
+            Bioproject=BIOPROJECT),
         salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}/refseq.bin",
             Bioproject=BIOPROJECT)
 
@@ -251,6 +251,7 @@ rule salmon_index:
         salmon_index="results/06_diffex/salmon_index_{Bioproject}/refseq.bin"
     params:
         salmon_out_dir="results/06_diffex/salmon_index_{Bioproject}"
+    threads: 50
     run:
         shell("salmon index "
         "--transcripts {input.trinity_fasta} "
