@@ -31,7 +31,8 @@ if("--help" %in% args) {
       ./deparse_taxa.R --x=\"input1.txt\" --out=\"output.txt\" 
       
       Rafael Correia da Silva
-      FCAV/UNESP - Univ Estadual Paulista
+      GCCRC - Genomics for Climate Change Research Center
+      www.gccrc.unicamp.br
       rcs.biotec@gmail.com
       \n\n")
   
@@ -70,7 +71,10 @@ if(is.null(argsL[['outDir']])) {
   q(save="no")
 }
 
+### Dummy examples (to test implementation)
+
 ### Libraries
 require("DESeq2")
 require("tximport")
 require("gtools")
+require("BiocParallel")

@@ -79,9 +79,9 @@ rule all:
             Bioproject=BIOPROJECT),
         longest_orfs=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep",
             Bioproject=BIOPROJECT),
-        salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}/refseq.bin",
+        salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}",
             Bioproject=BIOPROJECT),
-        salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}/quant.sf",
+        salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
             Bioproject=BIOPROJECT, acc=ACCESSION)
 
 ## Baixa os SRA
@@ -250,14 +250,12 @@ rule salmon_index:
     input:
         trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta"
     output:
-        salmon_index="results/06_diffex/salmon_index_{Bioproject}/refseq.bin"
-    params:
-        salmon_out_dir="results/06_diffex/salmon_index_{Bioproject}"
+        salmon_index=directory("results/06_diffex/salmon_index_{Bioproject}")
     threads: 50
     run:
         shell("salmon index "
         "--transcripts {input.trinity_fasta} "
-        "--index {params.salmon_out_dir} "
+        "--index {output.salmon_index} "
         "--threads {threads}")
 
 ## Salmon step 2. Actual quantification
@@ -272,10 +270,9 @@ rule salmon_quant:
         fq2="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_2.fastq",
         salmon_index="results/06_diffex/salmon_index_{Bioproject}"
     output:
-        salmon_quant="results/06_diffex/salmon_quant_{Bioproject}/{acc}/quant.sf"
+        salmon_quant=directory("results/06_diffex/salmon_quant_{Bioproject}/{acc}")
     params:
         mapdir="results/04_trinity_assembly/trinity_{Bioproject}",
-        salmon_quant_outdir="results/06_diffex/salmon_quant_{Bioproject}/{acc}",
         libType="A",
         scoreFraction="0.70"
     threads: 8
@@ -287,7 +284,7 @@ rule salmon_quant:
             "--libType {params.libType} "
             "--mates1 {input.fq1} "
             "--mates2 {input.fq2} "
-            "-o {params.salmon_quant_outdir} "
+            "-o {output.salmon_quant} "
             "--geneMap ${{map}} "
             "--validateMappings "
             "--gcBias --seqBias "
