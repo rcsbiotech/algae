@@ -248,7 +248,7 @@ rule after_asm_rename:
 ### The index is needed to map reads to a transcriptome, and count.
 rule salmon_index:
     input:
-        trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta"
+        trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta"
     output:
         salmon_index="results/06_diffex/salmon_index_{Bioproject}/refseq.bin"
     params:
