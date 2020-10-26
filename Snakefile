@@ -79,6 +79,8 @@ rule all:
             Bioproject=BIOPROJECT),
         longest_orfs=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep",
             Bioproject=BIOPROJECT)
+        salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}/refseq.bin",
+            Bioproject=BIOPROJECT)
 
 ## Baixa os SRA
 rule prefetch:
