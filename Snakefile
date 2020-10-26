@@ -268,8 +268,8 @@ rule salmon_index:
 
 rule salmon_quant:
     input:
-        fq1="results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq", 
-        fq2="results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
+        fq1="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_1.fastq", 
+        fq2="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_2.fastq",
         salmon_index="results/06_diffex/salmon_index_{Bioproject}"
     output:
         salmon_quant="results/06_diffex/salmon_quant_{Bioproject}/{acc}/quant.sf"
@@ -278,7 +278,7 @@ rule salmon_quant:
         salmon_quant_outdir="results/06_diffex/salmon_quant_{Bioproject}/{acc}",
         libType="A",
         scoreFraction="0.70"
-    threads: 50
+    threads: 8
     run:
         shell(
             "map=$(ls {params.mapdir}/*gene_trans_map) && "
