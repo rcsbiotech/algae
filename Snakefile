@@ -227,7 +227,7 @@ rule trinity_asm:
         if VAR_ASSEMBLY_STRATEGY == "genome_guided":
             shell("Trinity --version")
 
-# rename fasta headers by analysis code
+# Rename fasta headers by analysis code
 rule after_asm_rename:
     input:
         trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta"
@@ -240,7 +240,8 @@ rule after_asm_rename:
         shell("sed 's/TRINITY/{params.ID}_TRINITY/' {input} > {output.ren_out} && "
             "sed -i 's/ .*//' {output.ren_out} && "
             "map=$(ls {params.trinity_dir}/*gene_trans_map) && "
-            "sed -i 's/TRINITY/{params.ID}_TRINITY/g' ${{map}}")
+            "sed -i 's/TRINITY/{params.ID}_TRINITY/g' ${{map}} && "
+            "awk -F $'\t' '{ t = $1; $1 = $2; $2 = t; print; }' OFS=$'\t' ${{map}} > ${{map}}.transposed")
             
 # --- Quantification --- #
 
@@ -278,7 +279,7 @@ rule salmon_quant:
     threads: 8
     run:
         shell(
-            "map=$(ls {params.mapdir}/*gene_trans_map) && "
+            "map=$(ls {params.mapdir}/*transposed) && "
             "salmon quant "
             "--index {input.salmon_index} "
             "--libType {params.libType} "
@@ -294,16 +295,23 @@ rule salmon_quant:
 
 
 
-
-
-
 # --- DiffEx ---- #
 ## Inputs:
 ### - A set of salmon directories
 ### - A metadata.txt file ([to do] to be specified on instructions.md)
 ## Outputs:
 ### - All sets of diffex genes with values (p, p-adj, deltaFC, deltaquant)
-           
+rule diffex_test_pairs_wald:
+    input:
+        salmon_meta_dir="results/06_diffex/salmon_quant_{Bioproject}"
+    output:
+        diffex_wald_table="results/06_diffex/waldTest/{Bioproject}/GDE_paired.txt"
+    params:
+        gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/gene_trans_map",
+        metadata="data/intel/{Bioproject}/metadata.txt"
+    threads: 50
+    run:
+        shell("echo")
 
 
 

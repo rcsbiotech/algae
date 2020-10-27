@@ -16,13 +16,14 @@ if(length(args) < 1) {
 # Help section ----
 if("--help" %in% args) {
   cat("
-      deparse_taxa.R            Split taxonomy table with uniques and collapsed
+      DESeq2_Wald.R            Split taxonomy table with uniques and collapsed
       
       Arguments:
       
       --input=Path             - Path to salmon quant files
       --metadata=metadata.tsv  - Path to metadata.txt file, with header and one line
                                  per sample
+      --map=gene_trans_map     - Path to gene to transcript map
       --outDir=folderPath      - Name to write all differential expression output
       --threads=int            - Number of threads to run DESeq2 parallel
       --help                   - Print this help
