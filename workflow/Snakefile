@@ -241,7 +241,7 @@ rule after_asm_rename:
             "sed -i 's/ .*//' {output.ren_out} && "
             "map=$(ls {params.trinity_dir}/*gene_trans_map) && "
             "sed -i 's/TRINITY/{params.ID}_TRINITY/g' ${{map}} && "
-            "awk -F $'\t' '{ t = $1; $1 = $2; $2 = t; print; }' OFS=$'\t' ${{map}} > ${{map}}.transposed")
+            "scripts/shell/transpose.sh ${{map}} ${{map}}.transposed")
             
 # --- Quantification --- #
 
