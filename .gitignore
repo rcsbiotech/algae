@@ -4,6 +4,7 @@ results
 .Rproj.user
 .snakemake
 logs/*
+test
 
 ## Transdecoder
 pipeliner*
