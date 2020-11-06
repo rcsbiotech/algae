@@ -20,7 +20,7 @@ if("--help" %in% args) {
       
       Arguments:
       
-      --input=Path             - Path to salmon quant files
+      --input=Path             - Path to salmon quant files directory
       --metadata=metadata.tsv  - Path to metadata.txt file, with header and one line
                                  per sample
       --map=gene_trans_map     - Path to gene to transcript map
@@ -79,3 +79,42 @@ require("DESeq2")
 require("tximport")
 require("gtools")
 require("BiocParallel")
+
+### [r2c] Dummy missing libraries
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("tximport")
+
+### [r2c] Dummy vars
+dummy.input <- "test/01_deseq2_Wald/results/06_diffex/salmon_quant_PRJNA609760"
+dummy.metadata <- read.delim("E:/Workspace/GIT/algae2/test/01_deseq2_Wald/data/intel/PRJNA609760/metadata.txt")
+dummy.map <- read.delim("E:/Workspace/GIT/algae2/test/01_deseq2_Wald/results/04_trinity_assembly/trinity_PRJNA609760/gene_trans_map.transposed", stringsAsFactors=FALSE)
+dummy.threads <- 6
+
+### Register thread number
+# register(MulticoreParam(i.threads))
+# [r2c] SnowParam
+# register(SnowParam(6))
+
+### Quant files path
+files <- file.path(dummy.input, dummy.metadata$Run, "quant.sf")
+
+### Extract all treatments
+grep(colnames(dummy.metadata)
+
+### Import with tximport
+txi <- tximport(files, type="salmon", tx2gene = dummy.map)
+# head(txi$counts, 4)
+dds <- DESeqDataSetFromTximport(txi, colData = dummy.metadata, design =~ C_Temperature)
+deseq.dds <- DESeq(dds, parallel=T, fitType='local')
+
+## Generate combinations of treatments
+# Treatment combinations
+treat.combs <- as.data.frame(permutations(n = length(levels(dummy.metadata$C_Temperature)),
+                            r = 2,
+                            v = levels(dummy.metadata$C_Temperature),
+                            repeats.allowed = F))
+
+## Paste as text to generate outputs
+treat.combs$text.combs = paste(treat.combs[,1], treat.combs[,2], sep='_')

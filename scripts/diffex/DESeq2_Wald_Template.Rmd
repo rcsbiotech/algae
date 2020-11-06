@@ -1,0 +1,293 @@
+---
+title: "01_DiffEx_RNA02"
+author: "RCSILVA"
+date: "17/08/2020"
+output: html_document
+---
+
+## Some setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## Aliasing functions for quicker interactive actions
+s <- function(x) system(x)
+
+## Analysis ID
+par_id="RNA03"
+
+## Libraries
+### RNA-Seq
+library("DESeq2")
+library("tximport")
+### Permutations and combinatorics
+library('gtools')
+
+## Threads
+p.threads=40
+register(MulticoreParam(p.threads))
+
+## Working directory (Master)
+setwd("/work/rcsilva/projects/2020/RNA-Seq/2020-08-17_finish_RNA")
+
+## Outdir
+# "../2_analysis/14_DESeq2/DEX.tsv
+out_dex_table = paste("../05_diffex/", par_id, ".dex.tsv", sep="")
+```
+
+To start, we need:
+
+- Transcriptome quantification files
+  - For every paired sample;
+  - Singleton files (single.R1 & single.R2)
+  
+Let's read it up with tximport:
+
+```{r}
+# Entradas:
+
+## Diretório com todas as quantificações do salmon
+dir <- paste("../02_quant/", par_id, "/", sep="")
+
+## Tabela metadados
+### Colunas mandatórias:
+### 1. Coluna "samples", a amostra biológica a qual se refere
+### 2. Coluna "run", o nome base (SRR)
+### 3. Coluna "replicate", com nomes diferentes por réplica
+### 4. Coluna "treatment", aquilo que se quer testar
+### 5. Coluna "technical", com nomes idênticos para singleton e paired
+par_path_metadata <- paste("../08_metadata/", par_id, "_samples.txt", sep="")
+samples <- read.table(par_path_metadata, header=T)
+
+# Constrói os caminhos
+files <- file.path(dir, samples$folder, "quant.sf")
+
+# Nomes dos caminhos
+names(files) <- samples$sample.SRR
+
+## Gene to trans
+par_path_gene_trans = paste("../03_02_gene_trans_map/", par_id, ".map", sep="")
+gene_trans = read.delim(file = par_path_gene_trans, header = F)
+head(gene_trans)
+gene_trans = gene_trans[,c(2,1)]
+
+
+## Rename transcripts f'n
+f_rename_transcripts <- function(transcripts, id) {
+  new_transcripts <- gsub(pattern = "^",
+                          replacement = paste(as.character(id), "_", sep=""),
+                          x = transcripts)
+  return(new_transcripts)
+}
+
+
+
+# Importa com txi
+txi <- tximport(files, type = "salmon", tx2gene = gene_trans)
+
+# Rename if necessary
+gene_trans$V2 <- f_rename_transcripts(gene_trans$V2, par_id)
+txi <- tximport(files, type = "salmon", tx2gene = gene_trans)
+
+# Verifica após importado
+head(txi$counts, 4)
+```
+
+Uma vez importado, cria o objeto DESeq2:
+
+```{r}
+## Cria o objeto DESeq2
+print("Creating DESeq2 object")
+dds <- DESeqDataSetFromTximport(txi, colData = samples, design =~ treatment)
+
+## Junta as contagens de single com paired
+print("Collapsing technical replicates")
+dds <- collapseReplicates(dds, dds$sample.SRR)
+
+## Roda a expressão diferencial
+print("Running DESeq2")
+print("Choosen contrast:")
+print(dds@design)
+
+# Execução do DESeq
+deseq.dds <- DESeq(dds, parallel=T, fitType='local')
+
+# Results!
+first.results <- results(deseq.dds)
+
+## Quantos para cada valor?
+### P-adj 0.1
+sum(first.results$padj < 0.1, na.rm = T)
+```
+```{r}
+### P-adj 0.05
+sum(first.results$padj < 0.05, na.rm = T)
+```
+
+## Resultados por tratamento: método genérico
+
+Gera a saída para todos os pares conforme a coluna `treatment`, conforme uma permutação
+
+```{r}
+## Os níveis são
+levels(samples$treatment)
+
+## Ferramenta de permutação
+# install.packages('gtools')
+
+
+# Treatment combinations
+treat.combs <- as.data.frame(permutations(n = length(levels(samples$treatment)),
+                            r = 2,
+                            v = levels(samples$treatment),
+                            repeats.allowed = F))
+
+# Names of treatments
+treat.combs$text.combs = paste(treat.combs[,1], treat.combs[,2], sep='_')
+
+# DESeq out list
+deseq.out <- list()
+
+# Loops over treatment
+for (trat in 1:nrow(treat.combs)) {
+  ## Gets first trat name
+  trat1 <- as.character(treat.combs[trat,1])
+  ## Gets second trat name
+  trat2 <- as.character(treat.combs[trat,2])
+  ## Gets paired name
+  trat.name <- as.character(treat.combs[trat,3])
+  ## Get numbers from DESeq2
+  deseq.tmp.results <- results(deseq.dds, contrast=c("treatment", trat1, trat2))
+  ## Filter out bad stuff
+  deseq.tmp.results <- deseq.tmp.results[!is.na(deseq.tmp.results$padj),]
+  deseq.tmp.results <- deseq.tmp.results[deseq.tmp.results$padj < 0.05, ]
+  deseq.tmp.results <- deseq.tmp.results[abs(deseq.tmp.results$log2FoldChange) > 2, ]
+  ## Saves in a list, treatment by treatment
+  deseq.out[trat.name] <- deseq.tmp.results
+}
+```
+
+## Concatenar anotações: método genérico
+
+```{r}
+head(gene_trans)
+
+## Adiciona eggnog, cria os nomes de transcritos
+par_path_emapper <- paste("../04_annotation/", par_id, "_eggnog/emapper.emapper.annotations", sep="")
+
+### Read emapper table
+annot_emapper <- read.delim(file = par_path_emapper)
+
+### Add transcript ID to each protein annotation
+annot_emapper$isoform = gsub(pattern = ".p.", replacement = "",  x = annot_emapper$query_name)
+colnames(annot_emapper)[14] = "transcript_id"
+
+## Opt. fix gene_trans names
+colnames(gene_trans) <- c("transcript_id", "gene_id")
+
+## Renames transcripts
+## ONLY IF not renamed already
+annot_emapper$transcript_id <- f_rename_transcripts(annot_emapper$transcript_id, par_id)
+gene_trans$transcript_id <- f_rename_transcripts(gene_trans$transcript_id, par_id)
+
+## Adiciona os genes
+gene_annot = merge(x = annot_emapper, y = gene_trans, by = "transcript_id", all.y = T)
+```
+
+## Juntando os resultados (genérico).
+
+1. Extrair os L2FC e PADJ por condição;
+2. Adicionar à tabela de anotações.
+
+### Full loop
+
+```{r}
+## Starting tables
+dummy_out <- gene_annot
+
+## Contrasts
+deseq.trats <- names(deseq.out)
+
+## Actual loop
+for (trat_no in 1:length(names(deseq.out))) {
+  # Access treatments by length:
+  # print(trat_no)
+  test.trat1 <- deseq.trats[trat_no]
+  test.df1 <- as.data.frame(deseq.out[test.trat1][[1]])
+  test.df1$gene_id = row.names(test.df1)
+
+  ## Create names
+  par_name_padj = paste("padj", deseq.trats[trat_no], sep="_")
+  par_name_l2fc = paste("l2fc", deseq.trats[trat_no], sep="_")
+
+  ## Table to merge, only if table is not empty
+  if (!isEmpty(test.df1$gene_id)) {
+  test.df1.step2 <- test.df1[,c("gene_id", "log2FoldChange", "padj")]
+  colnames(test.df1.step2)[c(2,3)] <- c(par_name_l2fc, par_name_padj)
+
+  ## Then merge
+  dummy_out <- merge(dummy_out, test.df1.step2, by = "gene_id", all.x = T)
+  }
+}
+```
+
+
+```{r}
+## Remove all genes without expression values
+### replaces NAs with 0
+dummy_out[is.na(dummy_out)] = 0
+
+### Sum columns
+#### First, determine how many (always 2*treatments)
+par_trat_lines = 16 + (2 * dim(treat.combs)[1]) - 1
+
+#### Extract these columns
+dummy_trats = dummy_out[,c(16:par_trat_lines)]
+
+#### Sum each columns
+bad_rows = rowSums(x = dummy_trats) == 0
+
+#### Remove non-DE genes
+dummy_out <- dummy_out[!bad_rows,]
+
+
+```
+
+
+# Output
+
+```{r}
+## Write DEX table
+write.table(dummy_out,
+            file = out_dex_table,
+            quote = F,
+            sep = '\t',
+            row.names = F)
+```
+
+
+
+
+## To do
+
+- Pfam/InterProScan
+
+### Backbone of the loop (DO NOT RUN)
+```{r}
+## Extract DF
+test.trat1 <- deseq.trats[1]
+test.df1 <- as.data.frame(deseq.out[test.trat1][[1]])
+test.df1$gene_id = row.names(test.df1)
+
+## Create names
+par_name_padj = paste("padj", deseq.trats[1], sep="_")
+par_name_l2fc = paste("l2fc", deseq.trats[1], sep="_")
+
+## Table to merge
+test.df1.step2 <- test.df1[,c("gene_id", "log2FoldChange", "padj")]
+colnames(test.df1.step2)[c(2,3)] <- c(par_name_l2fc, par_name_padj)
+
+## Then merge
+dummy_gene_annot <- gene_annot
+dummy_out <- merge(dummy_gene_annot, test.df1.step2, by = "gene_id", all.x = T)
+```
