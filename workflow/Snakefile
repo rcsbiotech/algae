@@ -11,14 +11,14 @@
 import pandas as pd
 
 # [.. General vars ..] #
-VAR_ANALYSIS_ID="TEST001"
+VAR_ANALYSIS_ID="RED10"
 
 # [ .. Public data vars .. ] #
 ## SRA Accessions
 ### Download method: {PREFETCH | WGET}
-VAR_DOWNLOAD_METHOD="WGET"
+VAR_DOWNLOAD_METHOD="PREFETCH"
 ### To-do: read from metadata - S4/json file
-BIOPROJECT="PRJNA609760"
+BIOPROJECT="PRJNA496319"
 
 # Metadata
 ## Parses metadata from "metadata.txt"
@@ -46,9 +46,9 @@ VAR_ASSEMBLY_STRATEGY="de_novo"
 ### 1. Search for genome in Taxonomy, or nearest
 ### 2. Click the latest/most interesting
 ### 3. On top left, right click copy link "Download sequences in FASTA for genome"
-REF_URL_NCBI_GENOME=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/002/754/935/GCF_002754935.1_ASM275493v1/GCF_002754935.1_ASM275493v1_genomic.fna.gz",]
-REF_URL_NCBI_ANNOTATION=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/002/754/935/GCF_002754935.1_ASM275493v1/GCF_002754935.1_ASM275493v1_genomic.gtf.gz",]
-REF_NCBI_GENOME_CODE=["GCF_002754935.1_ASM275493v1",]
+REF_URL_NCBI_GENOME=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/002/049/455/GCA_002049455.2_P_umbilicalis_v1/GCA_002049455.2_P_umbilicalis_v1_genomic.fna.gz",]
+REF_URL_NCBI_ANNOTATION=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/002/049/455/GCA_002049455.2_P_umbilicalis_v1/GCA_002049455.2_P_umbilicalis_v1_genomic.gtf.gz",]
+REF_NCBI_GENOME_CODE=["GCA_002049455.2_P_umbilicalis_v1_genomic",]
 
 ## THREADS per process
 THREADS_STAR_INDEX=10
@@ -90,6 +90,7 @@ rule prefetch:
         "data/intel/{Bioproject}/samples/{accession}.blank"
     params:
         outdir="results/00_sra_files/{Bioproject}/{accession}",
+        outdir_prefetch="results/00_sra_files/{Bioproject}",
         force="all"
     output:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
@@ -97,7 +98,7 @@ rule prefetch:
     run:
         if VAR_DOWNLOAD_METHOD == "PREFETCH":
             shell("prefetch {wildcards.accession} --force {params.force} "
-            "--output-directory {params.outdir}")
+            "--output-directory {params.outdir_prefetch}")
         if VAR_DOWNLOAD_METHOD == "WGET":
             shell("mkdir -p {params.outdir} && "
                 "wget http://sra-download.ncbi.nlm.nih.gov/srapub/{wildcards.accession} "
@@ -132,7 +133,6 @@ rule import_reference_genome:
     output:
         reference_genome="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.fna",
         reference_annotation="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.gtf"
-    log: "logs/{Bioproject}/genomeDownload/log.txt"
     shell:
         "wget -q -O data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.fna.gz {REF_URL_NCBI_GENOME} && "
         "wget -q -O data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.gtf.gz {REF_URL_NCBI_ANNOTATION} && "
@@ -153,7 +153,6 @@ rule star_genome_generate:
     params:
         star_overhang={VAR_OVERHANG}
     threads: 10
-    log: "logs/{Bioproject}/star_genome_generate/log.txt"
     shell:
         "STAR --runThreadN {threads} "
         "--runMode genomeGenerate "
@@ -183,7 +182,7 @@ rule star_align:
         outdir="results/03_STAR_alignment/{code}",
         unmapped="Within"
     threads: 30
-    log: "logs/{Bioproject}/star_align/{acc}.log.txt"
+    log: "logs/star_align/{code}.{acc}.log.txt"
     shell:
         "fqb=$(basename {input.fq1} _1.fastq) && "
         "STAR "
@@ -217,7 +216,7 @@ rule trinity_asm:
         max_memory="600G",
         max_read_cov=20
     threads: 50
-    log: "logs/{Bioproject}/TrinityAssembly/{code}_log.txt"
+    log: "logs/TrinityAssembly/{code}_log.txt"
     run:
         if VAR_ASSEMBLY_STRATEGY == "de_novo":
             read1_parsed = ",".join(map(str, input.fq_read1))
