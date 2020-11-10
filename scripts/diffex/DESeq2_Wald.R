@@ -101,10 +101,15 @@ dummy.threads <- 6
 files <- file.path(dummy.input, dummy.metadata$Run, "quant.sf")
 
 ### Extract all treatments
-grep(colnames(dummy.metadata)
+treatmentCols <- grep(pattern = "^C_", x = colnames(dummy.metadata))
+timeCourseCols <- grep(pattern = "^TC_", x = colnames(dummy.metadata))
 
 ### Import with tximport
 txi <- tximport(files, type="salmon", tx2gene = dummy.map)
+
+## Wald Test Function per treatment
+DESeq2_Wald <- function(txiData, metadata, design)
+
 # head(txi$counts, 4)
 dds <- DESeqDataSetFromTximport(txi, colData = dummy.metadata, design =~ C_Temperature)
 deseq.dds <- DESeq(dds, parallel=T, fitType='local')
@@ -118,3 +123,17 @@ treat.combs <- as.data.frame(permutations(n = length(levels(dummy.metadata$C_Tem
 
 ## Paste as text to generate outputs
 treat.combs$text.combs = paste(treat.combs[,1], treat.combs[,2], sep='_')
+
+
+
+
+
+
+
+
+
+
+
+
+
+

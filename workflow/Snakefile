@@ -93,6 +93,7 @@ rule prefetch:
         force="all"
     output:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
+    log: "logs/{Bioproject}/prefetch/{accession}.txt"
     run:
         if VAR_DOWNLOAD_METHOD == "PREFETCH":
             shell("prefetch {wildcards.accession} --force {params.force} "
@@ -109,6 +110,7 @@ rule md5validate:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     output:
         "results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt"
+    log: "logs/{Bioproject}/md5validate/{accession}.log.txt"
     shell:
         "vdb-validate {input} 2> {output}"
         
@@ -120,6 +122,7 @@ rule fastqdump:
         fqdir=directory("results/02_fastq_dump/{Bioproject}/{accession}"),
         fq1="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
         fq2="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_2.fastq"
+    log: "logs/{Bioproject}/fastq-dump/{accession}.log.txt"
     shell:
         "fastq-dump --split-e {input} "
         "--outdir {output.fqdir}"
@@ -129,6 +132,7 @@ rule import_reference_genome:
     output:
         reference_genome="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.fna",
         reference_annotation="data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.gtf"
+    log: "logs/{Bioproject}/genomeDownload/log.txt"
     shell:
         "wget -q -O data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.fna.gz {REF_URL_NCBI_GENOME} && "
         "wget -q -O data/genomes/{BIOPROJECT}/{REF_NCBI_GENOME_CODE}.gtf.gz {REF_URL_NCBI_ANNOTATION} && "
@@ -149,6 +153,7 @@ rule star_genome_generate:
     params:
         star_overhang={VAR_OVERHANG}
     threads: 10
+    log: "logs/{Bioproject}/star_genome_generate/log.txt"
     shell:
         "STAR --runThreadN {threads} "
         "--runMode genomeGenerate "
@@ -178,6 +183,7 @@ rule star_align:
         outdir="results/03_STAR_alignment/{code}",
         unmapped="Within"
     threads: 30
+    log: "logs/{Bioproject}/star_align/{acc}.log.txt"
     shell:
         "fqb=$(basename {input.fq1} _1.fastq) && "
         "STAR "
@@ -211,6 +217,7 @@ rule trinity_asm:
         max_memory="600G",
         max_read_cov=20
     threads: 50
+    log: "logs/{Bioproject}/TrinityAssembly/{code}_log.txt"
     run:
         if VAR_ASSEMBLY_STRATEGY == "de_novo":
             read1_parsed = ",".join(map(str, input.fq_read1))
@@ -253,6 +260,7 @@ rule salmon_index:
     output:
         salmon_index=directory("results/06_diffex/salmon_index_{Bioproject}")
     threads: 50
+    log: "logs/{Bioproject}/salmon_index/log.txt"
     run:
         shell("salmon index "
         "--transcripts {input.trinity_fasta} "
@@ -277,6 +285,7 @@ rule salmon_quant:
         libType="A",
         scoreFraction="0.70"
     threads: 8
+    log: "logs/{Bioproject}/star_quant/{acc}.log.txt"
     run:
         shell(
             "map=$(ls {params.mapdir}/*transposed) && "
@@ -310,6 +319,7 @@ rule diffex_test_pairs_wald:
         gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/gene_trans_map",
         metadata="data/intel/{Bioproject}/metadata.txt"
     threads: 50
+    log: "logs/{Bioproject}/DESeq2/log.txt"
     run:
         shell("echo")
 
@@ -327,6 +337,7 @@ rule transdecoder_get_peptides:
         inpdir="results/04_trinity_assembly/trinity_{Bioproject}",
         outdir="results/05_annotation/01_transdecoder_{Bioproject}",
         minsize=70
+    log: "logs/{Bioproject}/TransDecoder.LongOrfs/log.txt"
     run:
         shell("map=$(ls {params.inpdir}/*gene_trans_map) && "
 	    "TransDecoder.LongOrfs -t {input} "
