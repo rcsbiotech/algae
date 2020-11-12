@@ -314,7 +314,17 @@ rule salmon_quant:
                 "--gcBias --seqBias "
                 "--threads {threads}")
         elif VAR_LIB_LAYOUT == "SINGLE":
-            shell()
+            shell(
+                "map=$(ls {params.mapdir}/*transposed) && "
+                "salmon quant "
+                "--index {input.salmon_index} "
+                "--libType {params.libType} "
+                "--unmatedReads {input.fq1} "
+                "-o {output.salmon_quant} "
+                "--geneMap ${{map}} "
+                "--validateMappings "
+                "--gcBias --seqBias "
+                "--threads {threads}")
 
 
 
