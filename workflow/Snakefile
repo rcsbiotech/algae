@@ -11,14 +11,14 @@
 import pandas as pd
 
 # [.. General vars ..] #
-VAR_ANALYSIS_ID="RED10"
+VAR_ANALYSIS_ID="RED02"
 
 # [ .. Public data vars .. ] #
 ## SRA Accessions
 ### Download method: {PREFETCH | WGET}
 VAR_DOWNLOAD_METHOD="PREFETCH"
 ### To-do: read from metadata - S4/json file
-BIOPROJECT="PRJNA496319"
+BIOPROJECT="PRJNA283027"
 
 # Metadata
 ## Parses metadata from "metadata.txt"
@@ -30,9 +30,9 @@ ACCESSION = list(metadata.index)
 
 # [.. RUN Setup ..] #
 ## Choose between { PAIRED | SINGLE | MIXED }
-VAR_LIB_LAYOUT="PAIRED"
+VAR_LIB_LAYOUT="SINGLE"
 ## Reads length (on average)
-VAR_READS_LENGTH=150
+VAR_READS_LENGTH=100
 ## STAR Overhang
 VAR_OVERHANG=VAR_READS_LENGTH-1
 
@@ -46,9 +46,9 @@ VAR_ASSEMBLY_STRATEGY="de_novo"
 ### 1. Search for genome in Taxonomy, or nearest
 ### 2. Click the latest/most interesting
 ### 3. On top left, right click copy link "Download sequences in FASTA for genome"
-REF_URL_NCBI_GENOME=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/002/049/455/GCA_002049455.2_P_umbilicalis_v1/GCA_002049455.2_P_umbilicalis_v1_genomic.fna.gz",]
-REF_URL_NCBI_ANNOTATION=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/002/049/455/GCA_002049455.2_P_umbilicalis_v1/GCA_002049455.2_P_umbilicalis_v1_genomic.gtf.gz",]
-REF_NCBI_GENOME_CODE=["GCA_002049455.2_P_umbilicalis_v1_genomic",]
+REF_URL_NCBI_GENOME=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/008/729/055/GCA_008729055.1_OUC_PyHait/GCA_008729055.1_OUC_PyHait_genomic.fna.gz",]
+REF_URL_NCBI_ANNOTATION=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/009/829/735/GCA_009829735.1_ASM982973v1/GCA_009829735.1_ASM982973v1_genomic.gtf.gz",]
+REF_NCBI_GENOME_CODE=["GCA_009829735.1_ASM982973v1_genomic",]
 
 ## THREADS per process
 THREADS_STAR_INDEX=10
@@ -120,12 +120,13 @@ rule fastqdump:
     input:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     output:
-        fqdir=directory("results/02_fastq_dump/{Bioproject}/{accession}"),
         fq1="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq"
+    params:
+        fqdir="results/02_fastq_dump/{Bioproject}/{accession}"
     log: "logs/{Bioproject}/fastq-dump/{accession}.log.txt"
     shell:
-        "fastq-dump --split-e {input} "
-        "--outdir {output.fqdir}"
+        "fastq-dump --split-files {input} "
+        "--outdir {params.fqdir}"
         
 ## Imports reference genome
 rule import_reference_genome:
