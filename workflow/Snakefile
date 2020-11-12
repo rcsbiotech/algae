@@ -28,15 +28,15 @@ ACCESSION = list(metadata.index)
 ## Works @ 2020-10-20
 # print(ACCESSION)
 
-## RUN Setup
-# Choose between { Paired | Single | Mixed }
+# [.. RUN Setup ..] #
+## Choose between { PAIRED | SINGLE | MIXED }
 VAR_LIB_LAYOUT="PAIRED"
-# Reads length (on average)
+## Reads length (on average)
 VAR_READS_LENGTH=150
-# STAR Overhang
+## STAR Overhang
 VAR_OVERHANG=VAR_READS_LENGTH-1
 
-## Assembly variables
+# Assembly variables
 ### "de_novo" or "genome_guided"
 ### TO DO:"de_novo" if no genome or poor alignment representation in gene space;
 ### "genome_guided" otherwise
@@ -121,8 +121,7 @@ rule fastqdump:
         "results/00_sra_files/{Bioproject}/{accession}/{accession}.sra"
     output:
         fqdir=directory("results/02_fastq_dump/{Bioproject}/{accession}"),
-        fq1="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
-        fq2="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_2.fastq"
+        fq1="results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq"
     log: "logs/{Bioproject}/fastq-dump/{accession}.log.txt"
     shell:
         "fastq-dump --split-e {input} "
@@ -172,30 +171,33 @@ rule star_align:
     input:
         index=expand("data/genomes/{code}/star_index", code=BIOPROJECT),
         annotf=expand("data/genomes/{code}/{ref}.gtf", code=BIOPROJECT, ref=REF_NCBI_GENOME_CODE),
-        fq1="results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq", 
-        fq2="results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq"
+        fq1="results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq"
     output:
         "results/03_STAR_alignment/{code}/{acc}.Aligned.out.bam"
     params:
+        in_fq2="results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
         multimapNmax=20,
         outSAMtype="BAM Unsorted",
         outdir="results/03_STAR_alignment/{code}",
         unmapped="Within"
     threads: 30
     log: "logs/star_align/{code}.{acc}.log.txt"
-    shell:
-        "fqb=$(basename {input.fq1} _1.fastq) && "
-        "STAR "
-        "--runThreadN {threads} "
-        "--genomeDir {input.index} "
-        "--readFilesIn {input.fq1} {input.fq2} "
-        "--sjdbGTFfile {input.annotf} "
-        "--outSAMstrandField intronMotif "
-        "--outFilterIntronMotifs RemoveNoncanonical "
-        "--outFilterMultimapNmax {params.multimapNmax} "
-        "--outFileNamePrefix {params.outdir}/${{fqb}}. "
-        "--outSAMunmapped {params.unmapped} "
-        "--outSAMtype {params.outSAMtype}"
+    run:
+        if VAR_LIB_LAYOUT == "PAIRED":
+            shell("fqb=$(basename {input.fq1} _1.fastq) && "
+            "STAR "
+            "--runThreadN {threads} "
+            "--genomeDir {input.index} "
+            "--readFilesIn {input.fq1} {input.fq2} "
+            "--sjdbGTFfile {input.annotf} "
+            "--outSAMstrandField intronMotif "
+            "--outFilterIntronMotifs RemoveNoncanonical "
+            "--outFilterMultimapNmax {params.multimapNmax} "
+            "--outFileNamePrefix {params.outdir}/${{fqb}}. "
+            "--outSAMunmapped {params.unmapped} "
+            "--outSAMtype {params.outSAMtype}")
+        else:
+            shell("echo")
         
 # [ .. Trinity assembly .. ] #
 # some R code join(map()) is run inside shell due to 
@@ -207,11 +209,11 @@ rule trinity_asm:
     input:
         fq_read1=expand("results/02_fastq_dump/{code}/{acc}/{acc}_1.fastq",
             code=BIOPROJECT, acc=ACCESSION),
-        fq_read2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
-            code=BIOPROJECT, acc=ACCESSION)
     output:
         trinity_fasta="results/04_trinity_assembly/trinity_{code}/Trinity.fasta"
     params:
+        fq_read2=expand("results/02_fastq_dump/{code}/{acc}/{acc}_2.fastq",
+            code=BIOPROJECT, acc=ACCESSION),
         trinity_dir=directory("results/04_trinity_assembly/trinity_{code}"),
         max_memory="600G",
         max_read_cov=20
@@ -219,16 +221,27 @@ rule trinity_asm:
     log: "logs/TrinityAssembly/{code}_log.txt"
     run:
         if VAR_ASSEMBLY_STRATEGY == "de_novo":
-            read1_parsed = ",".join(map(str, input.fq_read1))
-            read2_parsed = ",".join(map(str, input.fq_read2))
-            shell("Trinity "
-            "--seqType fq "
-            "--left {read1_parsed} "
-            "--right {read2_parsed} "
-            "--output {params.trinity_dir} "
-            "--max_memory {params.max_memory} "
-            "--normalize_max_read_cov {params.max_read_cov} "
-            "--CPU {threads}")
+            if VAR_LIB_LAYOUT == "PAIRED":
+                read1_parsed = ",".join(map(str, input.fq_read1))
+                read2_parsed = ",".join(map(str, params.fq_read2))
+                shell("Trinity "
+                "--seqType fq "
+                "--left {read1_parsed} "
+                "--right {read2_parsed} "
+                "--output {params.trinity_dir} "
+                "--max_memory {params.max_memory} "
+                "--normalize_max_read_cov {params.max_read_cov} "
+                "--CPU {threads}")
+            elif VAR_LIB_LAYOUT == "SINGLE":
+                read1_parsed = ",".join(map(str, input.fq_read1))
+                shell("Trinity "
+                "--seqType fq "
+                "--single {read1_parsed} "
+                "--output {params.trinity_dir} "
+                "--max_memory {params.max_memory} "
+                "--normalize_max_read_cov {params.max_read_cov} "
+                "--CPU {threads}")
+                
         # Placeholder: still gotta add bam > sam > sort sam.    
         if VAR_ASSEMBLY_STRATEGY == "genome_guided":
             shell("Trinity --version")
@@ -275,30 +288,32 @@ rule salmon_index:
 rule salmon_quant:
     input:
         fq1="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_1.fastq", 
-        fq2="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_2.fastq",
         salmon_index="results/06_diffex/salmon_index_{Bioproject}"
     output:
         salmon_quant=directory("results/06_diffex/salmon_quant_{Bioproject}/{acc}")
     params:
+        in_fq2="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_2.fastq",
         mapdir="results/04_trinity_assembly/trinity_{Bioproject}",
         libType="A",
         scoreFraction="0.70"
     threads: 8
     log: "logs/{Bioproject}/star_quant/{acc}.log.txt"
     run:
-        shell(
-            "map=$(ls {params.mapdir}/*transposed) && "
-            "salmon quant "
-            "--index {input.salmon_index} "
-            "--libType {params.libType} "
-            "--mates1 {input.fq1} "
-            "--mates2 {input.fq2} "
-            "-o {output.salmon_quant} "
-            "--geneMap ${{map}} "
-            "--validateMappings "
-            "--gcBias --seqBias "
-            "--threads {threads}"
-        )
+        if VAR_LIB_LAYOUT == "PAIRED":
+            shell(
+                "map=$(ls {params.mapdir}/*transposed) && "
+                "salmon quant "
+                "--index {input.salmon_index} "
+                "--libType {params.libType} "
+                "--mates1 {input.fq1} "
+                "--mates2 {params.in_fq2} "
+                "-o {output.salmon_quant} "
+                "--geneMap ${{map}} "
+                "--validateMappings "
+                "--gcBias --seqBias "
+                "--threads {threads}")
+        elif VAR_LIB_LAYOUT == "SINGLE":
+            shell()
 
 
 

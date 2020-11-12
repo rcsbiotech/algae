@@ -14,7 +14,14 @@ My algae gene prospection project.
 08. Eggnog-mapper annotation
 09. Salmon quantification
 10. [wip] DESeq2 Wald test (RScript)
-11. [to do] DESeq2 LRT test (RScript)
+11. [wip] Single-end branch
+12. [to do] DESeq2 LRT test (RScript)
+
+## About the pipeline - Single-end, Paired-end and mixed reads.
+
+- Paired-end: fully implemented and functional. R2 read is passed as parameter, not input, throughout the entire pipeline.
+- Single-end: Under implementation.
+- Mixed samples: since it's the rarest case, still to be implemented.
 
 ## To do (2020-10-26)
 
