@@ -100,19 +100,25 @@ require("gtools")
 require("BiocParallel")
 
 ### Input vars renaming
+# i.* - Direct input
+# var.i* - Input that has to be parsed/imported
 i.salmon = argsL[['input']]
-i.metadata = argsL[['metadata']]
-i.map = argsL[['map']]
-i.outdir = argsL[['outDir']]
 i.threads = argsL[['threads']]
+
+var.i.metadata = argsL[['metadata']]
+var.i.map = argsL[['map']]
+var.i.outdir = argsL[['outDir']]
 
 
 ### [r2c] Dummy vars
 # dummy.input <- "test/01_deseq2_Wald/results/06_diffex/salmon_quant_PRJNA609760"
-# dummy.metadata <- read.delim("E:/Workspace/GIT/algae2/test/01_deseq2_Wald/data/intel/PRJNA609760/metadata.txt", stringsAsFactors=T)
-# dummy.map <- read.delim("E:/Workspace/GIT/algae2/test/01_deseq2_Wald/results/04_trinity_assembly/trinity_PRJNA609760/gene_trans_map.transposed", stringsAsFactors=FALSE)
 # dummy.threads <- 6
 # dummy.outdir <- "test/01_deseq2_Wald/results/06_diffex/output"
+
+### Inputs
+i.metadata <- read.delim("E:/Workspace/GIT/algae2/test/01_deseq2_Wald/data/intel/PRJNA609760/metadata.txt", stringsAsFactors=T)
+i.map <- read.delim(var.i.map, stringsAsFactors=FALSE)
+
 
 ### Register thread number
 register(MulticoreParam(i.threads))

@@ -27,10 +27,14 @@ My algae gene prospection project.
     5. Any number of dependent treatments starting with "TC_"
 - No spaces or dashes are allowed in any header or data;
 
+## Releases
+
+- 0.1: From reads to assemble
+- (wip) 0.2: Differential expression with DESeq2 (Wald/LRT test)
+
 ## About the pipeline - Single-end, Paired-end and mixed reads.
 
-- Paired-end: fully implemented and functional. R2 read is passed as parameter, not input, throughout the entire pipeline.
-- Single-end: Under implementation.
+- Paired-end and Single-end: fully implemented and functional. R2 read is passed as parameter, not input, throughout the entire pipeline.
 - Mixed samples: since it's the rarest case, still to be implemented.
 
 ## To do (2020-10-26)
@@ -43,3 +47,4 @@ My algae gene prospection project.
 6. Google Cloud auth//integration in a private (.gitignore) file, and safe auth options
 7. DiffEx plots (RScript)
 9. Merge annotated genes with sequences
+10. Add "snakemake" as base environment
