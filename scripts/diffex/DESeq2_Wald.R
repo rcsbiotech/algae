@@ -1,10 +1,9 @@
+#!/usr/bin/env Rscript
+
 # Public data algae pipeline: Wald test #
 ## Given a set of salmon quant transcriptomes, calculate
 ## differentially expressed genes between pairs of conditions,
 ## passed by a "C_condition" on a "metadata.txt" tsv file.
-
-#!/usr/bin/Rscript
-# /usr/bin/env Rscript
 
 args <- commandArgs(TRUE)
 
@@ -35,6 +34,14 @@ if("--help" %in% args) {
       GCCRC - Genomics for Climate Change Research Center
       www.gccrc.unicamp.br
       rcs.biotec@gmail.com
+      
+      Example run:
+      Rscript ./scripts/diffex/DESeq2_Wald.R \
+	    --input='results/06_diffex/salmon_quant_PRJNA401507' \
+	    --metadata='data/intel/PRJNA401507/metadata.txt' \
+	    --map='results/04_trinity_assembly/trinity_PRJNA401507/Trinity.fasta.gene_trans_map.transposed' \
+	    --outDir='results/06_diffex/diffex_PRJNA401507' \
+	    --threads=40
       \n\n")
   
   q(save="no")
@@ -91,45 +98,48 @@ if(is.null(argsL[['outDir']])) {
   q(save="no")
 }
 
-### Dummy examples (to test implementation)
-
 ### Libraries
-require("DESeq2")
-require("tximport")
-require("gtools")
-require("BiocParallel")
+require("DESeq2", quietly = T)
+require("tximport", quietly = T)
+require("gtools", quietly = T)
+require("BiocParallel", quietly = T)
 
 ### Input vars renaming
-# i.* - Direct input
-# var.i* - Input that has to be parsed/imported
 i.salmon = argsL[['input']]
 i.threads = argsL[['threads']]
-
-var.i.metadata = argsL[['metadata']]
-var.i.map = argsL[['map']]
-var.i.outdir = argsL[['outDir']]
-
-
-### [r2c] Dummy vars
-# dummy.input <- "test/01_deseq2_Wald/results/06_diffex/salmon_quant_PRJNA609760"
-# dummy.threads <- 6
-# dummy.outdir <- "test/01_deseq2_Wald/results/06_diffex/output"
+i.outdir = argsL[['outDir']]
 
 ### Inputs
-i.metadata <- read.delim("E:/Workspace/GIT/algae2/test/01_deseq2_Wald/data/intel/PRJNA609760/metadata.txt", stringsAsFactors=T)
-i.map <- read.delim(var.i.map, stringsAsFactors=FALSE)
+i.metadata <- read.delim(file = argsL[['metadata']], stringsAsFactors=TRUE)
+i.map <- read.delim(argsL[['map']], stringsAsFactors=FALSE, header = F)
 
+#### Add colnames to tx2gene map
+colnames(i.map) <- c("transcript_id", "gene_id")
+
+### File validation tests
+if (! is.data.frame(i.metadata)) {
+  stop("Metadata file doesn't appear to be a table")
+}
 
 ### Register thread number
 register(MulticoreParam(i.threads))
 # [r2c] SnowParam
 # register(SnowParam(1))
 
-### Quant files path
+# Dummy vars ----
+### [r2c] Dummy vars
+# i.salmon <- "test/01_deseq2_Wald/results/06_diffex/salmon_quant_PRJNA609760"
+# i.threads <- 6
+# i.outdir <- "test/01_deseq2_Wald/results/06_diffex/output"
+# i.metadata <- read.delim("test/01_deseq2_Wald/data/intel/PRJNA609760/metadata.txt")
+# i.map <- read.delim("test/01_deseq2_Wald/results/04_trinity_assembly/trinity_PRJNA609760/gene_trans_map.transposed", stringsAsFactors = F, header = F)
+
+
+# tximport ----
 files <- file.path(i.salmon, i.metadata$Run, "quant.sf")
 
 ### Import with tximport
-txi <- tximport(files, type="salmon", i.map = dummy.map)
+txi <- tximport(files, type="salmon", tx2gene = i.map)
 
 ## Wald Test Function per treatment (Wald test and output)
   ## 1. DESeq2 analysis over DESeq2 object for a given set of metadata
@@ -176,6 +186,10 @@ DESeq2_Wald <- function(InTxiData, InMetadata, InInterestColumn) {
     ## Filter out bad stuff
     deseq.tmp.results <- deseq.tmp.results[!is.na(deseq.tmp.results$padj),]
     deseq.tmp.results <- deseq.tmp.results[abs(deseq.tmp.results$log2FoldChange) > 1, ]
+    ## Round numbers (less disk space)
+    deseq.tmp.results$pvalue <- round(deseq.tmp.results$pvalue, 4)
+    deseq.tmp.results$log2FoldChange <- round(deseq.tmp.results$log2FoldChange, 4)
+    deseq.tmp.results$padj <- round(deseq.tmp.results$padj, 4)
     ## Saves in a list, treatment by treatment
     deseq.out[trat.name] <- deseq.tmp.results
   }
@@ -239,8 +253,14 @@ for (df in 1:length(allDiffExWald)) {
   ## OutTable
   outTable <- curTable[,c(5,1,2,3,4)]
   
+  ## Significant at 0.05
+  outTable$sigpadj005 <- ifelse(curTable$`p-adj` < 0.05, "yes_padj005", "no_padj005")
+  outTable$sigpadj010 <- ifelse(curTable$`p-adj` < 0.10, "yes_padj010", "no_padj010")
+  outTable$sigpval005 <- ifelse(curTable$`p-val` < 0.05, "yes_pval005", "no_pval005")
+  outTable$sigpval010 <- ifelse(curTable$`p-val` < 0.05, "yes_pval010", "no_pval010")
+  
   ## Generates output path
-  outpath = paste(dummy.outdir, "DiffEx_", curTableName, ".tsv", sep = "")
+  outpath = paste(i.outdir, "DiffEx_", curTableName, ".tsv", sep = "")
   
   ## Escreve a tabela
   write.table(x = outTable, file = outpath, quote = F,
