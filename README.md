@@ -17,6 +17,16 @@ My algae gene prospection project.
 11. [wip] Single-end branch
 12. [to do] DESeq2 LRT test (RScript)
 
+## About the metadata file
+
+- Must have 4 columns:
+    1. "Bioproject" column with the Bioproject ID for all files
+    2. "Run" column - SRR Run - one ID per file
+    3. "Layout" column - either PAIRED or SINGLE
+    4. Any number of treatment columns starting with "C_"
+    5. Any number of dependent treatments starting with "TC_"
+- No spaces or dashes are allowed in any header or data;
+
 ## About the pipeline - Single-end, Paired-end and mixed reads.
 
 - Paired-end: fully implemented and functional. R2 read is passed as parameter, not input, throughout the entire pipeline.
