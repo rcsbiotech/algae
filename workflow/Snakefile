@@ -78,7 +78,7 @@ rule all:
             Bioproject=BIOPROJECT),
         salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
-        diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}",
+        diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
             Bioproject=BIOPROJECT)            
 
 ## Baixa os SRA
