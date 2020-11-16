@@ -338,7 +338,7 @@ rule diffex_test_pairs_wald:
     output:
         directory("results/06_diffex/DESeq2_{Bioproject}")
     params:
-        gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/gene_trans_map",
+        gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta.gene_trans_map.transposed",
         metadata="data/intel/{Bioproject}/metadata.txt"
     threads: 30
     log: "logs/{Bioproject}/DESeq2/log.txt"
