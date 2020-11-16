@@ -12,3 +12,6 @@ pipeliner*
 ## R Stuff
 .Rhistory
 .RData
+
+## Config backup
+config/backup*
