@@ -79,6 +79,10 @@ rule all:
             Bioproject=BIOPROJECT),
         longest_orfs=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep",
             Bioproject=BIOPROJECT),
+        purified_peps=expand("results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs_pure.pep",
+            Bioproject=BIOPROJECT),
+        samba_peps=expand("results/05_annotation/02_samba_nc_{Bioproject}/samba.pep",
+            Bioproject=BIOPROJECT),
         salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}",
             Bioproject=BIOPROJECT),
         salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
@@ -371,4 +375,29 @@ rule transdecoder_get_peptides:
         "--gene_trans_map ${{map}}")
 
 
+# --- RNASamba --- #
+## Removes * (stop) from protein file
+rule purify_transdecoder_peptides:
+    input:
+        "results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs.pep"
+    output:
+        "results/05_annotation/01_transdecoder_{Bioproject}/longest_orfs_pure.pep"
+    log: "logs/{Bioproject}/TransDecoder.Purify/log.txt"
+    run:
+        shell("sed 's/\*//g' {input} > {output}")
 
+## Get RNASamba coding/nc
+rule purify_transdecoder_peptides:
+    input:
+        trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta"
+    output:
+        samba_pep="results/05_annotation/02_samba_nc_{Bioproject}/samba.pep"
+    params:
+        samba_tsv="results/05_annotation/02_samba_nc_{Bioproject}/samba.tsv",
+        db_hdf5="/data3/rafael.correia/db/2020_RNAsamba/full_length_weights.hdf5"
+    log: "logs/{Bioproject}/TransDecoder.Purify/log.txt"
+    run:
+        shell("rnasamba classify "
+        "-p {output.samba_pep} "
+        "-v 1 "
+        "{params.samba_tsv} {input.trinity_fasta} {params.db_hdf5}")

@@ -48,3 +48,4 @@ My algae gene prospection project.
 7. DiffEx plots (RScript)
 9. Merge annotated genes with sequences
 10. Add "snakemake" as base environment
+11. Add an external reference to databases
