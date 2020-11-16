@@ -3,22 +3,16 @@
 # 2. Create sample blank files {ACCESSION}.blank inside data/intel/{BIOPROJECT/samples
 # 3. Run the pipeline
 
-
 ## YAML configs
-# configfile:"config/config.yaml"
+configfile:"config/config.yaml"
 
 # Libs
 import pandas as pd
 
 # [.. General vars ..] #
-VAR_ANALYSIS_ID="RED02"
-
-# [ .. Public data vars .. ] #
-## SRA Accessions
-### Download method: {PREFETCH | WGET}
-VAR_DOWNLOAD_METHOD="PREFETCH"
-### To-do: read from metadata - S4/json file
-BIOPROJECT="PRJNA283027"
+VAR_ANALYSIS_ID=config["CFG_AnalysisID"]
+VAR_DOWNLOAD_METHOD=config["CFG_SRA_Download_Method"]
+BIOPROJECT=config["CFG_Bioproject"]
 
 # Metadata
 ## Parses metadata from "metadata.txt"
@@ -30,25 +24,22 @@ ACCESSION = list(metadata.index)
 
 # [.. RUN Setup ..] #
 ## Choose between { PAIRED | SINGLE | MIXED }
-VAR_LIB_LAYOUT="SINGLE"
+VAR_LIB_LAYOUT=config["CFG_SRA_Layout"]
 ## Reads length (on average)
-VAR_READS_LENGTH=100
+VAR_READS_LENGTH=config["CFG_SRA_Spot_Length"]
 ## STAR Overhang
 VAR_OVERHANG=VAR_READS_LENGTH-1
 
 # Assembly variables
-### "de_novo" or "genome_guided"
-### TO DO:"de_novo" if no genome or poor alignment representation in gene space;
-### "genome_guided" otherwise
-VAR_ASSEMBLY_STRATEGY="de_novo"
+VAR_ASSEMBLY_STRATEGY=config["CFG_Assembly"]
 
 ## LINKS/REFS/NETWORK Setup
 ### 1. Search for genome in Taxonomy, or nearest
 ### 2. Click the latest/most interesting
 ### 3. On top left, right click copy link "Download sequences in FASTA for genome"
-REF_URL_NCBI_GENOME=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/008/729/055/GCA_008729055.1_OUC_PyHait/GCA_008729055.1_OUC_PyHait_genomic.fna.gz",]
-REF_URL_NCBI_ANNOTATION=["https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/009/829/735/GCA_009829735.1_ASM982973v1/GCA_009829735.1_ASM982973v1_genomic.gtf.gz",]
-REF_NCBI_GENOME_CODE=["GCA_009829735.1_ASM982973v1_genomic",]
+REF_URL_NCBI_GENOME=[config["CFG_Genome"],]
+REF_URL_NCBI_GENOME=[config["CFG_Annotation"],]
+REF_NCBI_GENOME_CODE=[config["CFG_GenomeID"],]
 
 ## THREADS per process
 THREADS_STAR_INDEX=10

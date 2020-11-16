@@ -8,3 +8,7 @@ test
 
 ## Transdecoder
 pipeliner*
+
+## R Stuff
+.Rhistory
+.RData

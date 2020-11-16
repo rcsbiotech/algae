@@ -1,0 +1,27 @@
+
+## Analysis ID
+CFG_AnalysisID: "TEST001"
+
+## PRJNA ID
+CFG_Bioproject: "PRJNA001001"
+
+### Download method: {PREFETCH | WGET}
+CFG_SRA_Download_Method: "PREFETCH"
+
+## SRA Spot Length
+CFG_SRA_Spot_Length: 100
+
+## SRA Library Layout
+### SINGLE, PAIRED or MIXED
+CFG_SRA_Layout: "SINGLE"
+
+## Assembly method
+### "de_novo" or "genome_guided"
+### TO DO:"de_novo" if no genome or poor alignment representation in gene space;
+### "genome_guided" otherwise
+CFG_Assembly: "de_novo"
+
+## Genome references
+CFG_Genome: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/008/729/055/GCA_008729055.1_OUC_PyHait/GCA_008729055.1_OUC_PyHait_genomic.fna.gz"
+CFG_Annotation: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/009/829/735/GCA_009829735.1_ASM982973v1/GCA_009829735.1_ASM982973v1_genomic.gtf.gz"
+CFG_GenomeID: "GCA_009829735.1_ASM982973v1_genomic"
