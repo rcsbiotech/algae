@@ -336,7 +336,7 @@ rule diffex_test_pairs_wald:
     input:
         salmon_meta_dir="results/06_diffex/salmon_quant_{Bioproject}"
     output:
-        directory("results/06_diffex/DESeq2_{Bioproject}")
+        directory("results/06_diffex/DESeq2_{Bioproject}/")
     params:
         gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta.gene_trans_map.transposed",
         metadata="data/intel/{Bioproject}/metadata.txt"
