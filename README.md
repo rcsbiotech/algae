@@ -13,9 +13,10 @@ My algae gene prospection project.
 07. TransDecoder to get peptides
 08. Eggnog-mapper annotation
 09. Salmon quantification
-10. [wip] DESeq2 Wald test (RScript)
-11. [wip] Single-end branch
-12. [to do] DESeq2 LRT test (RScript)
+10. DESeq2 Wald test (RScript)
+11. Single-end branch
+12. Diversified, fast annotation
+
 
 ## About the metadata file
 
@@ -30,7 +31,8 @@ My algae gene prospection project.
 ## Releases
 
 - 0.1: From reads to assemble
-- (wip) 0.2: Differential expression with DESeq2 (Wald/LRT test)
+- 0.2: (Current) Differential expression with DESeq2 (Wald/LRT test)
+- 0.3: (wip) Multiple annotation sources.
 
 ## About the pipeline - Single-end, Paired-end and mixed reads.
 
@@ -42,7 +44,7 @@ My algae gene prospection project.
 1. Fork decision: if alignment < 60%, do denovo, else, do genome-guided
 2. Add conda specification to each pipe step/environments
 3. Format to recommended Snakemake structure
-4. Add logs
+4. (done) Add logs
 5. Add salmon fork: if genome-guided, build a decoy transcriptome for additional mapping precision
 6. Google Cloud auth//integration in a private (.gitignore) file, and safe auth options
 7. DiffEx plots (RScript)

@@ -38,7 +38,7 @@ VAR_ASSEMBLY_STRATEGY=config["CFG_Assembly"]
 ### 2. Click the latest/most interesting
 ### 3. On top left, right click copy link "Download sequences in FASTA for genome"
 REF_URL_NCBI_GENOME=[config["CFG_Genome"],]
-REF_URL_NCBI_GENOME=[config["CFG_Annotation"],]
+REF_URL_NCBI_ANNOTATION=[config["CFG_Annotation"],]
 REF_NCBI_GENOME_CODE=[config["CFG_GenomeID"],]
 
 ## THREADS per process
@@ -77,7 +77,9 @@ rule all:
         salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}",
             Bioproject=BIOPROJECT),
         salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
-            Bioproject=BIOPROJECT, acc=ACCESSION)
+            Bioproject=BIOPROJECT, acc=ACCESSION),
+        diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}",
+            Bioproject=BIOPROJECT)            
 
 ## Baixa os SRA
 rule prefetch:
@@ -334,14 +336,20 @@ rule diffex_test_pairs_wald:
     input:
         salmon_meta_dir="results/06_diffex/salmon_quant_{Bioproject}"
     output:
-        diffex_wald_table="results/06_diffex/waldTest/{Bioproject}/GDE_paired.txt"
+        directory("results/06_diffex/DESeq2_{Bioproject}")
     params:
         gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/gene_trans_map",
         metadata="data/intel/{Bioproject}/metadata.txt"
-    threads: 50
+    threads: 30
     log: "logs/{Bioproject}/DESeq2/log.txt"
     run:
-        shell("echo")
+        shell(
+            "Rscript ./scripts/diffex/DESeq2_Wald.R "
+	        "--input={input.salmon_meta_dir} "
+            "--metadata={params.metadata} "
+            "--map={params.gene_trans_map} "
+            "--outDir={output} "
+            "--threads={threads}")
 
 
 
@@ -378,7 +386,7 @@ rule purify_transdecoder_peptides:
         shell("sed 's/\*//g' {input} > {output}")
 
 ## Get RNASamba coding/nc
-rule purify_transdecoder_peptides:
+rule get_samba_peps:
     input:
         trinity_fasta="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta"
     output:
