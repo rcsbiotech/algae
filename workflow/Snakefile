@@ -378,9 +378,11 @@ rule pull_diffex_transcripts_names:
     run:
         shell(
             "mkdir -p {params.outdir} && "
-            "grep yes_{params.diffex_sign_level} {input}/DiffEx* >> {input}/names.diffex.txt && "
+            "grep -h yes_{params.diffex_sign_level} {input}/DiffEx* >> {input}/names.diffex.txt && "
             "cut -f1 {input}/names.diffex.txt | sort | uniq >> {input}/names.unique.diffex.txt"
         )
+    ## grep -h: don't show filenames
+    ## cut -f1 | sort | uniq to set apart transcript names for pullseq
 
 ## Pullseq: Pull transcript sequences
 rule pull_diffex_transcripts_sequences:
