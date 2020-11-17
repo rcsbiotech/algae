@@ -14,5 +14,5 @@ pipeliner*
 .RData
 
 ## Config file backup
-config/backup*
+backup/*
 

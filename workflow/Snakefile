@@ -84,9 +84,9 @@ rule all:
             Bioproject=BIOPROJECT, acc=ACCESSION),
         diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
             Bioproject=BIOPROJECT),
-        pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/names.unique.diffex.txt",
+        pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt",
             Bioproject=BIOPROJECT),
-        pulled_diffex_sequences=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/transcripts.diffex.fa",
+        pulled_diffex_sequences=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/diffex.fa",
             Bioproject=BIOPROJECT)            
 
 ## Baixa os SRA
@@ -334,6 +334,13 @@ rule salmon_quant:
 
 
 
+
+
+
+
+
+
+
 # --- DiffEx ---- #
 ## Inputs:
 ### - A set of salmon directories
@@ -385,6 +392,14 @@ rule pull_diffex_transcripts_sequences:
         "--names {input.transcripts_names} "
         "--input {input.trinity_renamed} "
         ">> {output.transcripts}")
+
+
+
+
+
+
+
+
 
 
 
