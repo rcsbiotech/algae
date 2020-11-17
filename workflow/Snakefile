@@ -373,9 +373,11 @@ rule pull_diffex_transcripts_names:
     output:
         expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     params:
+        outdir=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}", Bioproject=BIOPROJECT)
         diffex_sign_level=expand("{Significance}", Significance=SIGNIFICANCE)
     run:
         shell(
+            "mkdir -p {params.outdir} && "
             "grep yes_{params.diffex_sign_level} {input}/DiffEx* >> {input}/names.diffex.txt && "
             "cut -f1 {input}/names.diffex.txt | sort | uniq >> {input}/names.unique.diffex.txt"
         )
