@@ -377,7 +377,7 @@ rule pull_diffex_transcripts_names:
     run:
         shell(
             "grep {params.diffex_sign_level} {input}/DiffEx* >> {input}/names.diffex.txt && "
-            "cut -f1 {input.diffex_dir}/names.diffex.txt | sort | uniq >> {input}/names.unique.diffex.txt"
+            "cut -f1 {input}/names.diffex.txt | sort | uniq >> {input}/names.unique.diffex.txt"
         )
 
 ## Pullseq: Pull transcript sequences
