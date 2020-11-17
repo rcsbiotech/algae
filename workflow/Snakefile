@@ -369,7 +369,7 @@ rule diffex_test_pairs_wald:
 ## Pull names before pulling sequences
 rule pull_diffex_transcripts_names:
     input:
-        diffex_dir="results/06_diffex/DESeq2_{Bioproject}"
+        diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}", Bioproject=BIOPROJECT)
     output:
         expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     params:
