@@ -1,7 +1,8 @@
 ## [.. Instructions (wip) ..] ##
 # 1. Create a metadata.txt file inside data/intel/{BIOPROJECT}
-# 2. Create sample blank files {ACCESSION}.blank inside data/intel/{BIOPROJECT/samples
-# 3. Run the pipeline
+# 2. Create sample blank files {ACCESSION}.blank inside data/intel/{BIOPROJECT/sample
+# 3. Fill up config/config.yaml with run parameters
+# 4. Run the pipeline using snakemake.yml as environment
 
 ## YAML configs
 configfile:"config/config.yaml"
@@ -44,6 +45,9 @@ REF_NCBI_GENOME_CODE=[config["CFG_GenomeID"],]
 ## THREADS per process
 THREADS_STAR_INDEX=10
 
+## DiffEx parameters
+SIGNIFICANCE=[config["CFG_DESeq2_Significance"],]
+
 ## "All outputs" rule
 ### For the pipeline to run back to back, every output must be passed as an input
 ### to all, otherwise one must explicit tell the shell which output must be generated.
@@ -79,6 +83,10 @@ rule all:
         salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
         diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
+            Bioproject=BIOPROJECT),
+        pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/names.unique.diffex.txt",
+            Bioproject=BIOPROJECT),
+        pulled_diffex_sequences=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/transcripts.diffex.fa",
             Bioproject=BIOPROJECT)            
 
 ## Baixa os SRA
@@ -350,6 +358,37 @@ rule diffex_test_pairs_wald:
             "--map={params.gene_trans_map} "
             "--outDir={output} "
             "--threads={threads}")
+
+## Pull names before pulling sequences
+rule pull_diffex_transcripts_names:
+    input:
+        diffex_dir="results/06_diffex/DESeq2_{Bioproject}"
+    output:
+        expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
+    params:
+        diffex_sign_level=expand("{Significance}", Significance=SIGNIFICANCE)
+    run:
+        shell(
+            "grep {params.diffex_sign_level} {input.diffex_dir}/DiffEx* >> {input.diffex_dir}/names.diffex.txt && "
+            "cut -f1 {input.diffex_dir}/names.diffex.txt | sort | uniq >> {input.diffex_dir}/names.unique.diffex.txt"
+        )
+
+## Pullseq: Pull transcript sequences
+rule pull_diffex_transcripts_sequences:
+    input:
+        trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta", Bioproject=BIOPROJECT),
+        transcripts_names=expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
+    output:
+        transcripts=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/diffex.fa", Bioproject=BIOPROJECT)
+    run:
+        shell("pullseq "
+        "--names {input.transcripts_names} "
+        "--input {input.trinity_renamed} "
+        ">> {output.transcripts}")
+
+
+
+
 
 
 
