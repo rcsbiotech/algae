@@ -84,9 +84,9 @@ rule all:
             Bioproject=BIOPROJECT, acc=ACCESSION),
         diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
             Bioproject=BIOPROJECT),
-        pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt",
+        pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt",
             Bioproject=BIOPROJECT),
-        pulled_diffex_sequences=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/diffex.fa",
+        pulled_diffex_sequences=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.fa",
             Bioproject=BIOPROJECT)            
 
 ## Baixa os SRA
@@ -369,9 +369,9 @@ rule diffex_test_pairs_wald:
 ## Pull names before pulling sequences
 rule pull_diffex_transcripts_names:
     input:
-        directory("results/06_diffex/DESeq2_{Bioproject}/")
+        directory(expand("results/06_diffex/DESeq2_{Bioproject}/", Bioproject=BIOPROJECT))
     output:
-        expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
+        expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     params:
         diffex_sign_level=expand("{Significance}", Significance=SIGNIFICANCE)
     run:
@@ -384,9 +384,9 @@ rule pull_diffex_transcripts_names:
 rule pull_diffex_transcripts_sequences:
     input:
         trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta", Bioproject=BIOPROJECT),
-        transcripts_names=expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
+        transcripts_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     output:
-        transcripts=expand("results/06_diffex/DESeq2_{Bioproject}/transcripts/diffex.fa", Bioproject=BIOPROJECT)
+        transcripts=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.fa", Bioproject=BIOPROJECT)
     run:
         shell("pullseq "
         "--names {input.transcripts_names} "
