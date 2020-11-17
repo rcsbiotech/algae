@@ -369,15 +369,15 @@ rule diffex_test_pairs_wald:
 ## Pull names before pulling sequences
 rule pull_diffex_transcripts_names:
     input:
-        diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}", Bioproject=BIOPROJECT)
+        "results/06_diffex/DESeq2_{Bioproject}/"
     output:
         expand("results/06_diffex/DESeq2_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     params:
         diffex_sign_level=expand("{Significance}", Significance=SIGNIFICANCE)
     run:
         shell(
-            "grep {params.diffex_sign_level} {input.diffex_dir}/DiffEx* >> {input.diffex_dir}/names.diffex.txt && "
-            "cut -f1 {input.diffex_dir}/names.diffex.txt | sort | uniq >> {input.diffex_dir}/names.unique.diffex.txt"
+            "grep {params.diffex_sign_level} {input}/DiffEx* >> {input}/names.diffex.txt && "
+            "cut -f1 {input.diffex_dir}/names.diffex.txt | sort | uniq >> {input}/names.unique.diffex.txt"
         )
 
 ## Pullseq: Pull transcript sequences
