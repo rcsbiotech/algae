@@ -1,19 +1,19 @@
 
 ## Analysis ID
-CFG_AnalysisID: "DRY01"
+CFG_AnalysisID: "TEST001"
 
 ## PRJNA ID
-CFG_Bioproject: "PRJNA390562"
+CFG_Bioproject: "PRJNA001001"
 
 ### Download method: {PREFETCH | WGET}
 CFG_SRA_Download_Method: "PREFETCH"
 
 ## SRA Spot Length
-CFG_SRA_Spot_Length: 150
+CFG_SRA_Spot_Length: 100
 
 ## SRA Library Layout
 ### SINGLE, PAIRED or MIXED
-CFG_SRA_Layout: "PAIRED"
+CFG_SRA_Layout: "SINGLE"
 
 ## Assembly method
 ### "de_novo" or "genome_guided"
@@ -26,5 +26,10 @@ CFG_Genome: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/008/729/055/GCA_008729
 CFG_Annotation: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/009/829/735/GCA_009829735.1_ASM982973v1/GCA_009829735.1_ASM982973v1_genomic.gtf.gz"
 CFG_GenomeID: "GCA_009829735.1_ASM982973v1_genomic"
 
-## DESeq2
-CFG_DESeq2_Significance: "pval_010"
+## DiffEx
+### Levels:
+  # padj005 - more stringent
+  # padj010
+  # pval005
+  # pval010 - less stringent
+CFG_DESeq2_Significance: "pval010"
