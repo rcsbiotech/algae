@@ -411,6 +411,7 @@ rule pull_diffex_transcripts_sequences:
 
 
 
+
             
 # --- Annotation --- #
 ## TransDecoder - pull peptides
@@ -458,3 +459,16 @@ rule get_samba_peps:
         "-p {output.samba_pep} "
         "-v 1 "
         "{params.samba_tsv} {input.trinity_fasta} {params.db_hdf5}")
+
+## Pullseq: Pull coding aminoacids
+rule pull_diffex_coding_proteins:
+    input:
+        samba_pep="results/05_annotation/02_samba_nc_{Bioproject}/samba.pep",
+        transcripts_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
+    output:
+        coding_peps=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex_aa.fa", Bioproject=BIOPROJECT)
+    run:
+        shell("pullseq "
+        "--names {input.transcripts_names} "
+        "--input {input.samba_pep} "
+        ">> {output.coding_peps}")
