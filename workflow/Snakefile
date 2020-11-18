@@ -87,7 +87,9 @@ rule all:
         pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt",
             Bioproject=BIOPROJECT),
         pulled_diffex_sequences=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.fa",
-            Bioproject=BIOPROJECT)            
+            Bioproject=BIOPROJECT),
+        pulled_diffex_samba_coding=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex_samba_aa.fa",
+            Bioproject=BIOPROJECT)        
 
 ## Baixa os SRA
 rule prefetch:
@@ -466,7 +468,7 @@ rule pull_diffex_coding_proteins:
         samba_pep="results/05_annotation/02_samba_nc_{Bioproject}/samba.pep",
         transcripts_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     output:
-        coding_peps=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex_aa.fa", Bioproject=BIOPROJECT)
+        coding_peps=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex_samba_aa.fa", Bioproject=BIOPROJECT)
     run:
         shell("pullseq "
         "--names {input.transcripts_names} "
