@@ -465,7 +465,7 @@ rule get_samba_peps:
 ## Pullseq: Pull coding aminoacids
 rule pull_diffex_coding_proteins:
     input:
-        samba_pep="results/05_annotation/02_samba_nc_{Bioproject}/samba.pep",
+        samba_pep=expand("results/05_annotation/02_samba_nc_{Bioproject}/samba.pep", Bioproject=BIOPROJECT),
         transcripts_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     output:
         coding_peps=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex_samba_aa.fa", Bioproject=BIOPROJECT)
