@@ -134,7 +134,6 @@ register(MulticoreParam(i.threads))
 # i.metadata <- read.delim("test/01_deseq2_Wald/data/intel/PRJNA609760/metadata.txt")
 # i.map <- read.delim("test/01_deseq2_Wald/results/04_trinity_assembly/trinity_PRJNA609760/gene_trans_map.transposed", stringsAsFactors = F, header = F)
 
-
 # tximport ----
 files <- file.path(i.salmon, i.metadata$Run, "quant.sf")
 
@@ -184,8 +183,8 @@ DESeq2_Wald <- function(InTxiData, InMetadata, InInterestColumn) {
     ## Get numbers from DESeq2
     deseq.tmp.results <- results(out.ddsWald, contrast=c(InInterestColumn, trat1, trat2))
     ## Filter out bad stuff
-    deseq.tmp.results <- deseq.tmp.results[!is.na(deseq.tmp.results$padj),]
-    deseq.tmp.results <- deseq.tmp.results[abs(deseq.tmp.results$log2FoldChange) > 1, ]
+    # deseq.tmp.results <- deseq.tmp.results[!is.na(deseq.tmp.results$padj),]
+    # deseq.tmp.results <- deseq.tmp.results[abs(deseq.tmp.results$log2FoldChange) > 1, ]
     ## Round numbers (less disk space)
     deseq.tmp.results$pvalue <- round(deseq.tmp.results$pvalue, 4)
     deseq.tmp.results$log2FoldChange <- round(deseq.tmp.results$log2FoldChange, 4)
@@ -234,8 +233,73 @@ for (cols in treatmentCols){
   
 }
 
+## [r2c]
+# backup <- allDiffExWald
+# allDiffExWald <- backup
+
+# Generate master table ----
+## New addition. Generates one large table with all differential expression.
+## Must harness allDiffExWald list object.
+
+## Start with empty df
+# all.df <- data.frame(matrix(nrow=dim(allDiffExWald[[1]])[1],ncol=0))
+count_flag = 0
+
+for (df in names(allDiffExWald)){
+    
+    ## Adds gene names
+    # allDiffExWald[df][[1]]$gene <- row.names(allDiffExWald[df][[1]])
+    
+    ## Captures each diffex.df
+    current.df <- as.data.frame(allDiffExWald[df])
+    
+    ## Add gene name
+    current.df$gene <- row.names(allDiffExWald[df][[1]])
+    
+    ## Keeps only useful info
+    current.df <- current.df[,c(2,5,6,7)]
+    
+    ## Stores the information.
+    ## if 0: new table
+    ## if =! 0: merge tables
+    
+    if (count_flag == 0) {
+        keep.df <- current.df
+    } else {
+        keep.df <- merge(keep.df, current.df, by = "gene")
+        
+    }
+    
+    
+    ## Adds to counter
+    count_flag = count_flag + 1
+    
+}
+
+
+
 
 # Writing outputs ----
+
+## Output: master table (keep.df)
+### Merge gene and isoform
+i.map.tmp <- i.map
+colnames(i.map.tmp)[2] <- "gene"
+keep.df <- merge(keep.df, i.map.tmp, by = "gene")
+
+### Put gene as col2, isoform as col1
+allColsLength <- dim(keep.df)[2]
+keep.df <- keep.df[,c(1,allColsLength,2:(allColsLength-1))]
+
+## Generates output path
+outpath_master = paste(i.outdir, "MasterTable", ".tsv", sep = "")
+
+## Escreve a tabela
+write.table(x = keep.df, file = outpath_master, quote = F,
+            sep = "\t", row.names = F, col.names = T)
+
+
+## Output: Per condition table ----
 # 1. One table per condition, with condition as a name
 # 2. Saves to target output directory
 for (df in 1:length(allDiffExWald)) {
@@ -250,14 +314,23 @@ for (df in 1:length(allDiffExWald)) {
   ## Merge with Isoform
   curTable <- merge(curTable, i.map, by="gene_id", all.x=T)
   
-  ## OutTable
+  ## OutTable: pick only useful columns
   outTable <- curTable[,c(5,1,2,3,4)]
   
+  ## Filter clean outs: L2FC
+  outTable <- outTable[abs(outTable$L2FC) > 1,]
+  
+  ## Filter by: pval
+  outTable <- outTable[abs(outTable$`p-val`) < 0.12,]
+  
+  ## Filter out: NA p-adj
+  outTable <- outTable[! is.na(outTable$`p-adj`),]
+  
   ## Significant at 0.05
-  outTable$sigpadj005 <- ifelse(curTable$`p-adj` < 0.05, "yes_padj005", "no_padj005")
-  outTable$sigpadj010 <- ifelse(curTable$`p-adj` < 0.10, "yes_padj010", "no_padj010")
-  outTable$sigpval005 <- ifelse(curTable$`p-val` < 0.05, "yes_pval005", "no_pval005")
-  outTable$sigpval010 <- ifelse(curTable$`p-val` < 0.05, "yes_pval010", "no_pval010")
+  outTable$sigpadj005 <- ifelse(outTable$`p-adj` < 0.05, "yes_padj005", "no_padj005")
+  outTable$sigpadj010 <- ifelse(outTable$`p-adj` < 0.10, "yes_padj010", "no_padj010")
+  outTable$sigpval005 <- ifelse(outTable$`p-val` < 0.05, "yes_pval005", "no_pval005")
+  outTable$sigpval010 <- ifelse(outTable$`p-val` < 0.10, "yes_pval010", "no_pval010")
   
   ## Generates output path
   outpath = paste(i.outdir, "DiffEx_", curTableName, ".tsv", sep = "")
