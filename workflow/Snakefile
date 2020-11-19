@@ -82,6 +82,8 @@ rule all:
             Bioproject=BIOPROJECT),
         salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
+        symlink_salmon_dir=expand("results/06_diffex/salmon_quant_out_{Bioproject}",
+            Bioproject=BIOPROJECT),
         diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
             Bioproject=BIOPROJECT),
         pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt",
@@ -293,6 +295,7 @@ rule salmon_index:
 ### transcriptome. This can improve both the sensitivity and specificity of mapping 
 ### and, as a result, can improve quantification accuracy (salmon docs).
 
+## Actual quantification
 rule salmon_quant:
     input:
         fq1="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_1.fastq", 
@@ -333,15 +336,17 @@ rule salmon_quant:
                 "--gcBias --seqBias "
                 "--threads {threads}")
 
-
-
-
-
-
-
-
-
-
+## Test symlink
+rule symlink_salmon:
+    input:
+        symlink_salmon_index="results/06_diffex/salmon_index_{Bioproject}"
+    output:
+        symlink_out=directory("results/06_diffex/salmon_quant_out_{Bioproject}")
+    params:
+        salmon_symlink_dir="results/06_diffex/salmon_quant_{Bioproject}"
+    run:
+        shell("ln -s {params.salmon_symlink_dir} {output}")
+    
 
 # --- DiffEx ---- #
 ## Inputs:
@@ -351,7 +356,7 @@ rule salmon_quant:
 ### - All sets of diffex genes with values (p, p-adj, deltaFC, deltaquant)
 rule diffex_test_pairs_wald:
     input:
-        salmon_meta_dir="results/06_diffex/salmon_quant_{Bioproject}"
+        salmon_meta_dir="results/06_diffex/salmon_quant_out_{Bioproject}"
     output:
         directory("results/06_diffex/DESeq2_{Bioproject}/")
     params:
