@@ -345,7 +345,7 @@ rule symlink_salmon:
     params:
         salmon_symlink_dir="results/06_diffex/salmon_quant_{Bioproject}"
     run:
-        shell("ln -s {params.salmon_symlink_dir} {output}")
+        shell("ln -s ${{PWD}}/{params.salmon_symlink_dir} ${{PWD}}/{output}")
     
 
 # --- DiffEx ---- #
