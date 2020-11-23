@@ -91,6 +91,8 @@ rule all:
         pulled_diffex_sequences=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.nt.{Code}.fa",
             Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID),
         pulled_diffex_samba_coding=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.aa.samba.{Code}.fna",
+            Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID),
+        emapper_samba_peps=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.annotations",
             Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
 
 ## Baixa os SRA
@@ -397,7 +399,7 @@ rule pull_diffex_transcripts_sequences:
         trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta", Bioproject=BIOPROJECT),
         transcripts_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt", Bioproject=BIOPROJECT)
     output:
-        transcripts=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.nt.{Code}.fa", Bioproject=BIOPROJECT, code=VAR_ANALYSIS_ID)
+        transcripts=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.nt.{Code}.fa", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
     run:
         shell("pullseq "
         "--names {input.transcripts_names} "
@@ -460,7 +462,7 @@ rule get_samba_peps:
     params:
         samba_tsv="results/05_annotation/02_samba_nc_{Bioproject}/samba.tsv",
         db_hdf5="/data3/rafael.correia/db/2020_RNAsamba/full_length_weights.hdf5"
-    log: "logs/{Bioproject}/TransDecoder.Purify/log.txt"
+    log: "logs/{Bioproject}/TransDecoder.Purify/rename.log.txt"
     run:
         shell("rnasamba classify "
         "-p {output.samba_pep} "
@@ -479,3 +481,24 @@ rule pull_diffex_coding_proteins:
         "--names {input.transcripts_names} "
         "--input {input.samba_pep} "
         ">> {output.coding_peps}")
+
+## Emapper: Annotate orthologs
+rule emapper_samba_diffex:
+    input:
+        samba_pep="results/05_annotation/02_samba_nc_{Bioproject}/samba.pep"
+    output:
+        samba_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.annotations", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
+    params:
+        samba_emapper_outdir="results/05_annotation/03_emapper_samba_{Bioproject}"
+    threads: 50
+    log: "logs/{Bioproject}/Samba.Annotate/log.txt"
+    run:
+        shell("python2 /data3/rafael.correia/shared/src/emapper/emapper.py "
+        "--database bact "
+        "-i {input} "
+        "-m diamond "
+        "--usemem "
+        "--cpu {threads} "
+        "--target_orthologs one2one "
+        "--output_dir results/05_annotation/03_emapper_samba_{Bioproject}/ "
+        "--output {Code}"
