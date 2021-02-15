@@ -93,7 +93,12 @@ rule all:
         pulled_diffex_samba_coding=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/diffex.aa.samba.{Code}.fna",
             Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID),
         emapper_samba_peps=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.annotations",
-            Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
+            Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID),
+        parsed_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean",
+            Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID),
+        transcriptTables_dir=expand("results/06_diffex/TranscriptTables_{Bioproject}",
+            Bioproject=BIOPROJECT)
+        
 
 ## Baixa os SRA
 rule prefetch:
@@ -421,6 +426,7 @@ rule pull_diffex_transcripts_sequences:
 
 
 
+
             
 # --- Annotation --- #
 ## TransDecoder - pull peptides
@@ -502,3 +508,58 @@ rule emapper_samba_diffex:
         "--target_orthologs one2one "
         "--output_dir results/05_annotation/03_emapper_samba_{Bioproject}/ "
         "--output {Code}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 2020-02 Get Transcript Tables
+## Input:
+### 1. DESeq2 Mastertable
+### 2. Samba peptides file
+### 3. Emapper.tsv annotation file
+## Output:
+### Transcript table, which associates transcript, diffex and annotation in a single tabular file
+
+### First, parse emapper (remove first 2 and last 2 lines)
+rule parse_emapper:
+    input:
+        samba_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.annotations", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
+    output:
+        parsed_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
+    run:
+        shell("sed "1,3{d}" {input} | tac | sed "1,3{d}" | tac > {output}")
+
+### Then, generate the transcript tables
+rule get_transcript_table:
+    input:
+        deseq2_dir="results/06_diffex/DESeq2_{Bioproject}"
+    output:
+        directory="results/06_diffex/TranscriptTables_{Bioproject}"
+    params:
+        samba_file="results/05_annotation/02_samba_nc_{Bioproject}/samba.tsv",
+        emapper_file="results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean"
+    threads: 30
+    log: "logs/{Bioproject}/DESeq2/log_transcript_table_R.txt"
+    run:
+        shell(
+            "mkdir {output} && "
+            "Rscript ./scripts/RScripts/GenerateTranscriptTables.R "
+	        "--master={input.salmon_meta_dir} "
+            "--samba={params.samba_file} "
+            "--emapper={params.emapper_file} "
+            "--out={output}/TranscriptTables.tsv")

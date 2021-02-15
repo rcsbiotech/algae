@@ -15,7 +15,7 @@ if(length(args) < 1) {
 # Help section ----
 if("--help" %in% args) {
   cat("
-      DESeq2_Wald.R            Split taxonomy table with uniques and collapsed
+      DESeq2_Wald.R            Simple pairwise comparison for transcripts
       
       Arguments:
       
@@ -112,6 +112,10 @@ i.outdir = argsL[['outDir']]
 ### Inputs
 i.metadata <- read.delim(file = argsL[['metadata']], stringsAsFactors=TRUE)
 i.map <- read.delim(argsL[['map']], stringsAsFactors=FALSE, header = F)
+
+# Fold change filter.
+## (2021-02) Maybe will change to user input at a later time.
+i.l2fc <- 02
 
 #### Add colnames to tx2gene map
 colnames(i.map) <- c("transcript_id", "gene_id")
