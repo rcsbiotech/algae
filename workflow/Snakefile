@@ -549,19 +549,18 @@ rule parse_emapper:
 ### Then, generate the transcript tables
 rule get_transcript_table:
     input:
-        deseq2_dir="results/06_diffex/DESeq2_{Bioproject}"
-    output:
-        directory="results/06_diffex/TranscriptTables_{Bioproject}"
-    params:
+        deseq2_dir="results/06_diffex/DESeq2_{Bioproject}",
         samba_file="results/05_annotation/02_samba_nc_{Bioproject}/samba.tsv",
         emapper_file="results/05_annotation/04_emapper_clean_{Bioproject}/Out.emapper.clean"
+    output:
+        directory="results/06_diffex/TranscriptTables_{Bioproject}"
     threads: 30
     log: "logs/{Bioproject}/DESeq2/log_transcript_table_R.txt"
     run:
         shell(
             "mkdir {output} && "
             "Rscript ./scripts/RScripts/GenerateTranscriptTables.R "
-            "--master={input.salmon_meta_dir} "
-            "--samba={params.samba_file} "
-            "--emapper={params.emapper_file} "
+            "--master={input.deseq2_dir}/MasterTable.tsv "
+            "--samba={input.samba_file} "
+            "--emapper={input.emapper_file} "
             "--out={output}/TranscriptTables.tsv")
