@@ -493,7 +493,8 @@ rule emapper_samba_diffex:
     input:
         samba_pep="results/05_annotation/02_samba_nc_{Bioproject}/samba.pep"
     output:
-        samba_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.annotations", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
+        samba_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.annotations",
+            Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
     params:
         samba_emapper_outdir="results/05_annotation/03_emapper_samba_{Bioproject}"
     threads: 50
@@ -542,7 +543,7 @@ rule parse_emapper:
     output:
         parsed_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
     run:
-        shell("sed "1,3{d}" {input} | tac | sed "1,3{d}" | tac > {output}")
+        shell('sed \"1,3{{d}}\" {input} | tac | sed \"1,3{{d}}\" | tac > {output}'')
 
 ### Then, generate the transcript tables
 rule get_transcript_table:
@@ -559,7 +560,7 @@ rule get_transcript_table:
         shell(
             "mkdir {output} && "
             "Rscript ./scripts/RScripts/GenerateTranscriptTables.R "
-	        "--master={input.salmon_meta_dir} "
+            "--master={input.salmon_meta_dir} "
             "--samba={params.samba_file} "
             "--emapper={params.emapper_file} "
             "--out={output}/TranscriptTables.tsv")
