@@ -94,7 +94,7 @@ rule all:
             Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID),
         emapper_samba_peps=expand("results/05_annotation/03_emapper_samba_{Bioproject}",
             Bioproject=BIOPROJECT),
-        parsed_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean",
+        parsed_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/Out.emapper.clean",
             Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID),
         transcriptTables_dir=expand("results/06_diffex/TranscriptTables_{Bioproject}",
             Bioproject=BIOPROJECT)
@@ -536,11 +536,11 @@ rule emapper_samba_diffex:
 ### First, parse emapper (remove first 2 and last 2 lines)
 rule parse_emapper:
     input:
-        samba_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.annotations", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
+        samba_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}", Bioproject=BIOPROJECT)
     output:
-        parsed_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
+        parsed_emapper=expand("results/05_annotation/04_emapper_clean_{Bioproject}/Out.emapper.clean", Bioproject=BIOPROJECT)
     run:
-        shell('sed "1,3{{d}}" {input} | tac | sed "1,3{{d}}" | tac > {output})
+        shell('sed "1,3{{d}}" {input}/Out.emapper.annotations | tac | sed "1,3{{d}}" | tac > {output}')
 
 ### Then, generate the transcript tables
 rule get_transcript_table:
@@ -550,7 +550,7 @@ rule get_transcript_table:
         directory="results/06_diffex/TranscriptTables_{Bioproject}"
     params:
         samba_file="results/05_annotation/02_samba_nc_{Bioproject}/samba.tsv",
-        emapper_file="results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean"
+        emapper_file="results/05_annotation/03_emapper_samba_{Bioproject}/Out.emapper.clean"
     threads: 30
     log: "logs/{Bioproject}/DESeq2/log_transcript_table_R.txt"
     run:
