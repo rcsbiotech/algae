@@ -508,7 +508,7 @@ rule emapper_samba_diffex:
         "--cpu {threads} "
         "--target_orthologs one2one "
         "--output_dir results/05_annotation/03_emapper_samba_{Bioproject}/ "
-        "--output {Code}"
+        "--output {Code}")
 
 
 
@@ -543,7 +543,7 @@ rule parse_emapper:
     output:
         parsed_emapper=expand("results/05_annotation/03_emapper_samba_{Bioproject}/{Code}.emapper.clean", Bioproject=BIOPROJECT, Code=VAR_ANALYSIS_ID)
     run:
-        shell('sed \"1,3{{d}}\" {input} | tac | sed \"1,3{{d}}\" | tac > {output}'')
+        shell('sed "1,3{{d}}" {input} | tac | sed "1,3{{d}}" | tac > {output}'')
 
 ### Then, generate the transcript tables
 rule get_transcript_table:
