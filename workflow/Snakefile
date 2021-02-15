@@ -497,7 +497,8 @@ rule emapper_samba_diffex:
     threads: 50
     log: "logs/{Bioproject}/Samba.Annotate/log.txt"
     run:
-        shell("python2 /data3/rafael.correia/shared/src/emapper/emapper.py "
+        shell("mkdir {output} && "
+        "python2 /data3/rafael.correia/shared/src/emapper/emapper.py "
         "--database bact "
         "-i {input} "
         "-m diamond "
