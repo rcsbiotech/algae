@@ -305,10 +305,12 @@ rule salmon_index:
 ### and, as a result, can improve quantification accuracy (salmon docs).
 
 ## Test mkdir
- rule salmon_mkdir:
-     output:
-         symlink_out=directory("results/06_diffex/salmon_quant_{Bioproject}")
-     run:
+rule salmon_mkdir:
+    input:
+        salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}", Bioproject=BIOPROJECT)
+    output:
+        symlink_out=directory("results/06_diffex/salmon_quant_{Bioproject}")
+    run:
         shell("mkdir {output}")
         #shell("ln -s ${{PWD}}/{input} {output}")
 
@@ -507,13 +509,6 @@ rule emapper_samba_diffex:
         "--target_orthologs one2one "
         "--output_dir {output} "
         "--output Out")
-
-
-
-
-
-
-
 
 
 
