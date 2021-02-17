@@ -82,6 +82,8 @@ rule all:
             Bioproject=BIOPROJECT),
         salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
+        salmon_quant_link=expand("results/06_diffex/salmon_quant_out_{Bioproject}",
+            Bioproject=BIOPROJECT),
         salmon_accession=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
         diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
@@ -342,8 +344,18 @@ rule salmon_quant:
                 "--validateMappings "
                 "--gcBias --seqBias "
                 "--threads {threads}")
-    
 
+
+
+# Generates a symlink based on one direction above salmon_quant
+rule make_shortcut_symlink:
+    input:
+        directory("results/06_diffex/salmon_quant_{Bioproject}")
+    output:
+        directory("results/06_diffex/salmon_quant_out_{Bioproject}")
+    run:
+        shell("ln -s ${{PWD}}/{input} {output}")
+    
 # --- DiffEx ---- #
 ## Inputs:
 ### - A set of salmon directories
@@ -352,11 +364,10 @@ rule salmon_quant:
 ### - All sets of diffex genes with values (p, p-adj, deltaFC, deltaquant)
 rule diffex_test_pairs_wald:
     input:
-        salmon_meta_dir="results/06_diffex/salmon_quant_{Bioproject}/{acc}"
+        salmon_meta_dir="results/06_diffex/salmon_quant_out_{Bioproject}"
     output:
         directory("results/06_diffex/DESeq2_{Bioproject}/")
     params:
-        salmon_upper_dir="results/06_diffex/salmon_quant_{Bioproject}",
         gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta.gene_trans_map.transposed",
         metadata="data/intel/{Bioproject}/metadata.txt"
     threads: 30
@@ -364,7 +375,7 @@ rule diffex_test_pairs_wald:
     run:
         shell(
             "Rscript ./scripts/diffex/DESeq2_Wald.R "
-	        "--input={params.salmon_upper_dir} "
+	        "--input={input} "
             "--metadata={params.metadata} "
             "--map={params.gene_trans_map} "
             "--outDir={output} "
