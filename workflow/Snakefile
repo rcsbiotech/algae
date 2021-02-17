@@ -82,6 +82,8 @@ rule all:
             Bioproject=BIOPROJECT),
         salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
+        salmon_accession=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
+            Bioproject=BIOPROJECT, acc=ACCESSION),
         #symlink_salmon_dir=expand("results/06_diffex/salmon_quant_out_{Bioproject}",
         #    Bioproject=BIOPROJECT),
         diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
@@ -308,6 +310,7 @@ rule salmon_quant:
         fq1="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_1.fastq", 
         salmon_index="results/06_diffex/salmon_index_{Bioproject}"
     output:
+        salmon_outdir=directory("results/06_diffex/salmon_quant_{Bioproject}")
         salmon_quant=directory("results/06_diffex/salmon_quant_{Bioproject}/{acc}")
     params:
         in_fq2="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_2.fastq",
