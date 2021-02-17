@@ -84,8 +84,6 @@ rule all:
             Bioproject=BIOPROJECT, acc=ACCESSION),
         salmon_accession=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
-        #symlink_salmon_dir=expand("results/06_diffex/salmon_quant_out_{Bioproject}",
-        #    Bioproject=BIOPROJECT),
         diffex_dir=expand("results/06_diffex/DESeq2_{Bioproject}/",
             Bioproject=BIOPROJECT),
         pulled_diffex_sequence_names=expand("results/06_diffex/DESeq2_Transcripts_{Bioproject}/names.unique.diffex.txt",
@@ -307,7 +305,7 @@ rule salmon_index:
 ## Test mkdir
 rule salmon_mkdir:
     input:
-        directory("results/06_diffex/salmon_index_{Bioproject}")
+        expand("results/06_diffex/salmon_index_{Bioproject}", Bioproject=BIOPROJECT)
     output:
         directory("results/06_diffex/salmon_quant_{Bioproject}")
     run:
