@@ -304,13 +304,20 @@ rule salmon_index:
 ### transcriptome. This can improve both the sensitivity and specificity of mapping 
 ### and, as a result, can improve quantification accuracy (salmon docs).
 
+## Test mkdir
+ rule salmon_mkdir:
+     output:
+         symlink_out=directory("results/06_diffex/salmon_quant_{Bioproject}")
+     run:
+        shell("mkdir {output}")
+        #shell("ln -s ${{PWD}}/{input} {output}")
+
 ## Actual quantification
 rule salmon_quant:
     input:
         fq1="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_1.fastq", 
         salmon_index="results/06_diffex/salmon_index_{Bioproject}"
     output:
-        salmon_outdir=directory("results/06_diffex/salmon_quant_{Bioproject}")
         salmon_quant=directory("results/06_diffex/salmon_quant_{Bioproject}/{acc}")
     params:
         in_fq2="results/02_fastq_dump/{Bioproject}/{acc}/{acc}_2.fastq",
@@ -345,15 +352,6 @@ rule salmon_quant:
                 "--validateMappings "
                 "--gcBias --seqBias "
                 "--threads {threads}")
-
-# ## Test symlink
-# rule symlink_salmon:
-#     input:
-#         salmon_symlink_dir="results/06_diffex/salmon_quant_{Bioproject}"
-#     output:
-#         symlink_out=directory("results/06_diffex/salmon_quant_out_{Bioproject}")
-#     run:
-#         shell("ln -s ${{PWD}}/{input} {output}")
     
 
 # --- DiffEx ---- #
@@ -368,6 +366,7 @@ rule diffex_test_pairs_wald:
     output:
         directory("results/06_diffex/DESeq2_{Bioproject}/")
     params:
+        salmon_upper_dir="results/06_diffex/salmon_quant_{Bioproject}"
         gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta.gene_trans_map.transposed",
         metadata="data/intel/{Bioproject}/metadata.txt"
     threads: 30
