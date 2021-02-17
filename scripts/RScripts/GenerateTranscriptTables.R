@@ -23,7 +23,7 @@ if("--help" %in% args) {
       From differentially expression tables and some annotation,
       parses and outputs with the information:
       
-      1. Nº of treatments in which the gene was DE (column Multisignificance)
+      1. Nยบ of treatments in which the gene was DE (column Multisignificance)
       2. What are those treatments (column Stress)
       
       ---
@@ -101,6 +101,7 @@ if(is.null(argsL[['out']])) {
 
 ### Libraries
 require("stringi", quietly = T)
+require("gtools", quietly = T)
 
 # Description: Stores information prior to sequence clustering
 # Inputs:

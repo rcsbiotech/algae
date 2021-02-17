@@ -54,20 +54,20 @@ SIGNIFICANCE=[config["CFG_DESeq2_Significance"],]
 ### Check for commas (,) when adding new rules or it'll fizzle!
 rule all:
     input:
-        sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra",
-            accession=ACCESSION, Bioproject=BIOPROJECT),
-        vdb=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt",
-            accession=ACCESSION, Bioproject=BIOPROJECT),
-        fqf=expand("results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
-            accession=ACCESSION, Bioproject=BIOPROJECT),
-        ref_genome=expand("data/genomes/{Bioproject}/{GenomeCode}.fna",
-            Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
-        ref_annot=expand("data/genomes/{Bioproject}/{GenomeCode}.gtf",
-            Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
-        star_index=expand("data/genomes/{Bioproject}/star_index",
-            Bioproject=BIOPROJECT),
-        bam=expand("results/03_STAR_alignment/{Bioproject}/{accession}.Aligned.out.bam",
-            Bioproject=BIOPROJECT, accession=ACCESSION),
+        #sra=expand("results/00_sra_files/{Bioproject}/{accession}/{accession}.sra",
+        #    accession=ACCESSION, Bioproject=BIOPROJECT),
+        #vdb=expand("results/01_vdb_logs/{Bioproject}/{accession}.vdb.txt",
+        #    accession=ACCESSION, Bioproject=BIOPROJECT),
+        #fqf=expand("results/02_fastq_dump/{Bioproject}/{accession}/{accession}_1.fastq",
+        #    accession=ACCESSION, Bioproject=BIOPROJECT),
+        #ref_genome=expand("data/genomes/{Bioproject}/{GenomeCode}.fna",
+        #    Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
+        #ref_annot=expand("data/genomes/{Bioproject}/{GenomeCode}.gtf",
+        #    Bioproject=BIOPROJECT, GenomeCode=REF_NCBI_GENOME_CODE),
+        #star_index=expand("data/genomes/{Bioproject}/star_index",
+        #    Bioproject=BIOPROJECT),
+        #bam=expand("results/03_STAR_alignment/{Bioproject}/{accession}.Aligned.out.bam",
+        #    Bioproject=BIOPROJECT, accession=ACCESSION),
         trinity_asm=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta",
             Bioproject=BIOPROJECT),
         trinity_renamed=expand("results/04_trinity_assembly/trinity_{Bioproject}/Trinity.renamed.fasta",
@@ -80,9 +80,7 @@ rule all:
             Bioproject=BIOPROJECT),
         salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}",
             Bioproject=BIOPROJECT),
-        salmon_quant=expand("results/06_diffex/salmon_quant_{Bioproject}",
-            Bioproject=BIOPROJECT, acc=ACCESSION),
-        salmon_quant_link=expand("results/06_diffex/salmon_quant_out_{Bioproject}",
+        salmon_quant=expand("results/06_diffex/calc/salmon_quant_{Bioproject}",
             Bioproject=BIOPROJECT),
         salmon_accession=expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}",
             Bioproject=BIOPROJECT, acc=ACCESSION),
@@ -345,16 +343,16 @@ rule salmon_quant:
                 "--gcBias --seqBias "
                 "--threads {threads}")
 
-
-
 # Generates a symlink based on one direction above salmon_quant
-rule make_shortcut_symlink:
+rule merge_salmon_outs:
     input:
-        directory("results/06_diffex/salmon_quant_{Bioproject}")
+        expand("results/06_diffex/salmon_quant_{Bioproject}/{acc}", Bioproject=BIOPROJECT, acc=ACCESSION)
     output:
-        directory("results/06_diffex/salmon_quant_out_{Bioproject}")
+        directory("results/06_diffex/calc/salmon_quant_{Bioproject}")
+    params:
+        salmon="results/06_diffex/salmon_quant_{Bioproject}"
     run:
-        shell("ln -s ${{PWD}}/{input} {output}")
+        shell("mkdir -p {output} && cp -R {params.salmon}/* {output}")
     
 # --- DiffEx ---- #
 ## Inputs:
@@ -364,18 +362,17 @@ rule make_shortcut_symlink:
 ### - All sets of diffex genes with values (p, p-adj, deltaFC, deltaquant)
 rule diffex_test_pairs_wald:
     input:
-        salmon_meta_dir="results/06_diffex/salmon_quant_out_{Bioproject}"
+        salmon_meta_dir="results/06_diffex/calc/salmon_quant_{BIOPROJECT}"
     output:
-        directory("results/06_diffex/DESeq2_{Bioproject}/")
+        directory("results/06_diffex/DESeq2_{BIOPROJECT}/")
     params:
-        gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta.gene_trans_map.transposed",
-        metadata="data/intel/{Bioproject}/metadata.txt"
+        gene_trans_map="results/04_trinity_assembly/trinity_{BIOPROJECT}/Trinity.fasta.gene_trans_map.transposed",
+        metadata="data/intel/{BIOPROJECT}/metadata.txt"
     threads: 30
-    log: "logs/{Bioproject}/DESeq2/log.txt"
     run:
         shell(
             "Rscript ./scripts/diffex/DESeq2_Wald.R "
-	        "--input={input} "
+            "--input={input} "
             "--metadata={params.metadata} "
             "--map={params.gene_trans_map} "
             "--outDir={output} "
@@ -443,7 +440,7 @@ rule transdecoder_get_peptides:
     log: "logs/{Bioproject}/TransDecoder.LongOrfs/log.txt"
     run:
         shell("map=$(ls {params.inpdir}/*gene_trans_map) && "
-	    "TransDecoder.LongOrfs -t {input} "
+	"TransDecoder.LongOrfs -t {input} "
         "-m {params.minsize} "
         "--output_dir {params.outdir} "
         "--gene_trans_map ${{map}}")
@@ -509,17 +506,6 @@ rule emapper_samba_diffex:
         "--output_dir {output} "
         "--output Out")
 
-
-
-
-
-
-
-
-
-
-
-
 # 2020-02 Get Transcript Tables
 ## Input:
 ### 1. DESeq2 Mastertable
@@ -543,13 +529,14 @@ rule parse_emapper:
 ### Then, generate the transcript tables
 rule get_transcript_table:
     input:
-        deseq2_dir="results/06_diffex/DESeq2_{Bioproject}",
-        samba_file="results/05_annotation/02_samba_nc_{Bioproject}/samba.tsv",
-        emapper_file="results/05_annotation/04_emapper_clean_{Bioproject}/Out.emapper.clean"
+        deseq2_dir="results/06_diffex/DESeq2_{BIOPROJECT}/",
+        samba_file="results/05_annotation/02_samba_nc_{BIOPROJECT}/samba.tsv",
+        emapper_file="results/05_annotation/04_emapper_clean_{BIOPROJECT}/Out.emapper.clean"
     output:
-        directory="results/06_diffex/TranscriptTables_{Bioproject}"
+        o_dir=directory("results/06_diffex/TranscriptTables_{BIOPROJECT}")
+        #o_tab="results/06_diffex/TranscriptTables_{BIOPROJECT}/TranscriptTables.tsv"
     threads: 30
-    log: "logs/{Bioproject}/DESeq2/log_transcript_table_R.txt"
+    log: "logs/{BIOPROJECT}/DESeq2/log_transcript_table_R.txt"
     run:
         shell(
             "mkdir {output} && "
@@ -557,4 +544,4 @@ rule get_transcript_table:
             "--master={input.deseq2_dir}/MasterTable.tsv "
             "--samba={input.samba_file} "
             "--emapper={input.emapper_file} "
-            "--out={output}/TranscriptTables.tsv")
+            "--out={output.o_dir}/TranscriptTables.tsv")
