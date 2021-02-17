@@ -1,6 +1,6 @@
-# GenerateTranscriptTable.R
-
 #!/usr/bin/env Rscript
+
+# GenerateTranscriptTables.R
 
 # Public data algae pipeline: Wald test #
 ## Given a set of salmon quant transcriptomes, calculate
