@@ -302,16 +302,6 @@ rule salmon_index:
 ### transcriptome. This can improve both the sensitivity and specificity of mapping 
 ### and, as a result, can improve quantification accuracy (salmon docs).
 
-## Test mkdir
-rule salmon_mkdir:
-    input:
-        expand("results/06_diffex/salmon_index_{Bioproject}", Bioproject=BIOPROJECT)
-    output:
-        directory("results/06_diffex/salmon_quant_{Bioproject}")
-    run:
-        shell("mkdir {output}")
-        #shell("ln -s ${{PWD}}/{input} {output}")
-
 ## Actual quantification
 rule salmon_quant:
     input:
@@ -362,7 +352,7 @@ rule salmon_quant:
 ### - All sets of diffex genes with values (p, p-adj, deltaFC, deltaquant)
 rule diffex_test_pairs_wald:
     input:
-        salmon_meta_dir="results/06_diffex/salmon_quant_{Bioproject}"
+        salmon_meta_dir="results/06_diffex/salmon_quant_{Bioproject}/{acc}"
     output:
         directory("results/06_diffex/DESeq2_{Bioproject}/")
     params:
@@ -374,7 +364,7 @@ rule diffex_test_pairs_wald:
     run:
         shell(
             "Rscript ./scripts/diffex/DESeq2_Wald.R "
-	        "--input={input.salmon_meta_dir} "
+	        "--input={params.salmon_upper_dir} "
             "--metadata={params.metadata} "
             "--map={params.gene_trans_map} "
             "--outDir={output} "
