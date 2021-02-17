@@ -346,13 +346,11 @@ rule salmon_quant:
 ## Test symlink
 rule symlink_salmon:
     input:
-        symlink_salmon_index="results/06_diffex/salmon_index_{Bioproject}"
+        salmon_symlink_dir="results/06_diffex/salmon_quant_{Bioproject}"
     output:
         symlink_out=directory("results/06_diffex/salmon_quant_out_{Bioproject}")
-    params:
-        salmon_symlink_dir="results/06_diffex/salmon_quant_{Bioproject}"
     run:
-        shell("ln -s ${{PWD}}/{params.salmon_symlink_dir} {output}")
+        shell("ln -s ${{PWD}}/{input} {output}")
     
 
 # --- DiffEx ---- #
@@ -541,9 +539,9 @@ rule parse_emapper:
     output:
         parsed_emapper=expand("results/05_annotation/04_emapper_clean_{Bioproject}/Out.emapper.clean", Bioproject=BIOPROJECT)
     params:
-        parsed_dir="results/05_annotation/04_emapper_clean_{Bioproject}"
+        parsed_dir=expand("results/05_annotation/04_emapper_clean_{Bioproject}", Bioproject=BIOPROJECT)
     run:
-        shell('mkdir {params.parsed_dir} && '
+        shell('mkdir -p {params.parsed_dir} && '
         'sed "1,3{{d}}" {input}/Out.emapper.annotations | tac | sed "1,3{{d}}" | tac > {output}')
 
 ### Then, generate the transcript tables
