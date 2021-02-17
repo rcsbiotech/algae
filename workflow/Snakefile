@@ -307,9 +307,9 @@ rule salmon_index:
 ## Test mkdir
 rule salmon_mkdir:
     input:
-        salmon_index=expand("results/06_diffex/salmon_index_{Bioproject}", Bioproject=BIOPROJECT)
+        directory("results/06_diffex/salmon_index_{Bioproject}")
     output:
-        symlink_out=directory("results/06_diffex/salmon_quant_{Bioproject}")
+        directory("results/06_diffex/salmon_quant_{Bioproject}")
     run:
         shell("mkdir {output}")
         #shell("ln -s ${{PWD}}/{input} {output}")
@@ -368,7 +368,7 @@ rule diffex_test_pairs_wald:
     output:
         directory("results/06_diffex/DESeq2_{Bioproject}/")
     params:
-        salmon_upper_dir="results/06_diffex/salmon_quant_{Bioproject}"
+        salmon_upper_dir="results/06_diffex/salmon_quant_{Bioproject}",
         gene_trans_map="results/04_trinity_assembly/trinity_{Bioproject}/Trinity.fasta.gene_trans_map.transposed",
         metadata="data/intel/{Bioproject}/metadata.txt"
     threads: 30
